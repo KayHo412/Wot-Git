@@ -1,0 +1,17 @@
+{
+  "name": "repolens",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm --parallel --filter @repolens/api --filter @repolens/web dev",
+    "dev:api": "pnpm --filter @repolens/api dev",
+    "dev:web": "pnpm --filter @repolens/web dev",
+    "build": "pnpm -r build",
+    "lint": "pnpm -r lint"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0"
+  },
+  "dependencies": {
+    "pnpm": "^11.25.0"
+  }
+}
