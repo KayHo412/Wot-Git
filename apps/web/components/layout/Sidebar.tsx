@@ -38,7 +38,7 @@ export function Sidebar({ activeTab = "hotspots", onSelectTab }: SidebarProps) {
   return (
     <aside className="hidden lg:flex flex-col w-[220px] shrink-0 border-r border-border min-h-screen sticky top-0 bg-bg">
       <div className="h-[57px] flex items-center px-4 border-b border-border">
-        <span className="text-sm font-semibold text-primary tracking-tight">RepoLens</span>
+        <span className="text-sm font-semibold text-primary tracking-tight">Repolens</span>
       </div>
       <nav className="flex flex-col gap-0.5 p-2 flex-1">
         {TABS.map(({ id, label, icon: Icon }) => {

@@ -42,7 +42,7 @@ export function CommitLog({ data, owner, repo }: CommitLogProps) {
     <Card id="commitlog">
       <CardHeader>
         <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3">
-          <div>
+          <div className="flex flex-col gap-1">
             <CardTitle>Commit Log</CardTitle>
             <p className="text-xs text-muted">
               Structured historical commit stream ({filtered.length.toLocaleString()} matches)

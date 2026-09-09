@@ -93,7 +93,7 @@ export function HotspotChart({ data }: HotspotChartProps) {
     <Card id="hotspots">
       <CardHeader>
         <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2">
-          <div>
+          <div className="flex flex-col gap-1">
             <CardTitle>Hotspot Map</CardTitle>
             <p className="text-xs text-muted">File size vs change frequency.</p>
           </div>

@@ -32,7 +32,7 @@ export function CoChangeTable({ data }: CoChangeTableProps) {
     <Card id="cochange">
       <CardHeader>
         <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3">
-          <div>
+          <div className="flex flex-col gap-1">
             <CardTitle>Temporal File Coupling (Co-Change)</CardTitle>
             <p className="text-xs text-muted">
               Pairs of files that consistently change together in the same commits

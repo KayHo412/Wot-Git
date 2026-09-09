@@ -28,7 +28,7 @@ export function BugFilesTable({ data, totalBugFixCommits, owner, repo }: BugFile
     <Card id="bugfiles">
       <CardHeader>
         <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3">
-          <div>
+          <div className="flex flex-col gap-1">
             <CardTitle>Bug-Associated Files</CardTitle>
             <p className="text-xs text-muted">
               Files modified in commits whose messages indicate defect resolution ({totalBugFixCommits.toLocaleString()} bug-fix commits total)

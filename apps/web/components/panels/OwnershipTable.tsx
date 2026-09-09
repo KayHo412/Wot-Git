@@ -34,7 +34,7 @@ export function OwnershipTable({ data }: OwnershipTableProps) {
     <Card id="ownership">
       <CardHeader>
         <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3">
-          <div>
+          <div className="flex flex-col gap-1">
             <CardTitle>Code Ownership &amp; Bus Factor</CardTitle>
             <p className="text-xs text-muted">
               Author contribution distribution and single-author risk identification

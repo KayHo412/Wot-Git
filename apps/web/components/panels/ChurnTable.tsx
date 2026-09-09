@@ -1,36 +1,44 @@
-"use client"
-import { useState, useMemo } from "react"
-import type { FileChurn } from "@repolens/types"
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { FilePath } from "@/components/shared/FilePath"
-import { isStale, formatDate } from "@/lib/utils"
-import { Search } from "lucide-react"
+"use client";
+import { useState, useMemo } from "react";
+import type { FileChurn } from "@repolens/types";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { FilePath } from "@/components/shared/FilePath";
+import { isStale, formatDate } from "@/lib/utils";
+import { Search } from "lucide-react";
 
 interface ChurnTableProps {
-  data: FileChurn[]
+  data: FileChurn[];
 }
 
 export function ChurnTable({ data }: ChurnTableProps) {
-  const [search, setSearch] = useState("")
-  const [limit, setLimit] = useState(50)
+  const [search, setSearch] = useState("");
+  const [limit, setLimit] = useState(50);
 
   const filtered = useMemo(() => {
-    return data.filter((item) => item.path.toLowerCase().includes(search.toLowerCase()))
-  }, [data, search])
+    return data.filter((item) =>
+      item.path.toLowerCase().includes(search.toLowerCase()),
+    );
+  }, [data, search]);
 
-  const displayed = filtered.slice(0, limit)
+  const displayed = filtered.slice(0, limit);
 
   return (
     <Card id="churn">
       <CardHeader>
         <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3">
-          <div>
+          <div className="flex flex-col gap-1">
             <CardTitle>File Churn</CardTitle>
-            <p className="text-xs text-muted">Most frequently modified files across repository commits</p>
+            <p className="text-xs text-muted">
+              Most frequently modified files across repository commits
+              <br />
+            </p>
           </div>
           <div className="relative w-full sm:w-64">
-            <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted" />
+            <Search
+              size={14}
+              className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted"
+            />
             <Input
               placeholder="Search file path..."
               value={search}
@@ -40,6 +48,7 @@ export function ChurnTable({ data }: ChurnTableProps) {
           </div>
         </div>
       </CardHeader>
+
       <CardContent className="p-0">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs border-collapse">
@@ -47,8 +56,12 @@ export function ChurnTable({ data }: ChurnTableProps) {
               <tr className="border-b border-border bg-surface/50 text-muted">
                 <th className="py-2.5 px-4 w-12 text-center font-mono">#</th>
                 <th className="py-2.5 px-4 font-medium">File Path</th>
-                <th className="py-2.5 px-4 font-medium text-right w-32">Commits</th>
-                <th className="py-2.5 px-4 font-medium text-right w-36">Last Touched</th>
+                <th className="py-2.5 px-4 font-medium text-right w-32">
+                  Commits
+                </th>
+                <th className="py-2.5 px-4 font-medium text-right w-36">
+                  Last Touched
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border/40">
@@ -60,10 +73,15 @@ export function ChurnTable({ data }: ChurnTableProps) {
                 </tr>
               ) : (
                 displayed.map((f, i) => {
-                  const stale = isStale(f.lastTouched)
+                  const stale = isStale(f.lastTouched);
                   return (
-                    <tr key={f.path} className="hover:bg-surface/60 transition-colors">
-                      <td className="py-2 px-4 text-center font-mono text-muted/60">{i + 1}</td>
+                    <tr
+                      key={f.path}
+                      className="hover:bg-surface/60 transition-colors"
+                    >
+                      <td className="py-2 px-4 text-center font-mono text-muted/60">
+                        {i + 1}
+                      </td>
                       <td className="py-2 px-4">
                         <FilePath path={f.path} />
                       </td>
@@ -71,12 +89,16 @@ export function ChurnTable({ data }: ChurnTableProps) {
                         {f.churnCount.toLocaleString()}
                       </td>
                       <td className="py-2 px-4 text-right font-mono text-xs">
-                        <span className={stale ? "text-muted/60" : "text-success"}>
-                          {f.lastTouched !== "unknown" ? formatDate(f.lastTouched) : "unknown"}
+                        <span
+                          className={stale ? "text-muted/60" : "text-success"}
+                        >
+                          {f.lastTouched !== "unknown"
+                            ? formatDate(f.lastTouched)
+                            : "unknown"}
                         </span>
                       </td>
                     </tr>
-                  )
+                  );
                 })
               )}
             </tbody>
@@ -94,5 +116,5 @@ export function ChurnTable({ data }: ChurnTableProps) {
         )}
       </CardContent>
     </Card>
-  )
+  );
 }

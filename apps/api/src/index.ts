@@ -18,5 +18,5 @@ app.use('/analyze', analyzeRouter)
 app.use(errorHandler)
 
 app.listen(PORT, () => {
-  console.log(`RepoLens API running on http://localhost:${PORT}`)
+  console.log(`Repolens API running on http://localhost:${PORT}`)
 })
