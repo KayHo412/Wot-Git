@@ -1,5 +1,5 @@
 import { simpleGit } from 'simple-git'
-import type { FileChurn } from '@repolens/types'
+import type { FileChurn } from '@wot-git/types'
 
 const EXCLUDED_EXTENSIONS = new Set([
   '.md', '.txt', '.json', '.yml', '.yaml', '.html', '.css', '.scss',

@@ -1,6 +1,6 @@
 "use client"
 import { useState, useMemo } from "react"
-import type { CommitRecord } from "@repolens/types"
+import type { CommitRecord } from "@wot-git/types"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { HashBadge } from "@/components/shared/HashBadge"

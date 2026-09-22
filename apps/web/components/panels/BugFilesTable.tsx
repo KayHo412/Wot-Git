@@ -1,6 +1,6 @@
 "use client"
 import { useState, useMemo } from "react"
-import type { BugAssociatedFile } from "@repolens/types"
+import type { BugAssociatedFile } from "@wot-git/types"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { FilePath } from "@/components/shared/FilePath"

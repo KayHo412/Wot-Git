@@ -1,5 +1,5 @@
 {
-  "name": "@repolens/api",
+  "name": "@wot-git/api",
   "version": "0.0.1",
   "scripts": {
     "dev": "tsx watch src/index.ts",
@@ -12,7 +12,7 @@
     "simple-git": "^3.25.0",
     "cors": "^2.8.5",
     "node-cache": "^5.1.2",
-    "@repolens/types": "workspace:*"
+    "@wot-git/types": "workspace:*"
   },
   "devDependencies": {
     "@types/express": "^4.17.21",

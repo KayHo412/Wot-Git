@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import type { Hotspot } from "@repolens/types";
+import type { Hotspot } from "@wot-git/types";
 import {
   ScatterChart,
   Scatter,

@@ -1,4 +1,4 @@
-import type { AnalysisResult } from "@repolens/types"
+import type { AnalysisResult } from "@wot-git/types"
 import { Flame, RefreshCw, Bug, AlertTriangle } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 

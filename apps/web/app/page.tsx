@@ -115,7 +115,7 @@ export default function LandingPage() {
       <div className="w-full max-w-xl flex flex-col gap-8">
         {/* Logo */}
         <div className="text-center">
-          <div className="text-3xl font-semibold text-primary tracking-tight mb-2">◈ Repolens</div>
+          <div className="text-3xl font-semibold text-primary tracking-tight mb-2">◈ Wot-Git</div>
           <p className="text-sm text-muted">Analyze any public GitHub repository — hotspots, churn, bugs, and ownership.</p>
         </div>
 

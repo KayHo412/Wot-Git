@@ -1,10 +1,10 @@
 {
-  "name": "repolens",
+  "name": "wot-git",
   "private": true,
   "scripts": {
-    "dev": "pnpm --parallel --filter @repolens/api --filter @repolens/web dev",
-    "dev:api": "pnpm --filter @repolens/api dev",
-    "dev:web": "pnpm --filter @repolens/web dev",
+    "dev": "pnpm --parallel --filter @wot-git/api --filter @wot-git/web dev",
+    "dev:api": "pnpm --filter @wot-git/api dev",
+    "dev:web": "pnpm --filter @wot-git/web dev",
     "build": "pnpm -r build",
     "lint": "pnpm -r lint"
   },
@@ -12,6 +12,6 @@
     "typescript": "^5.4.0"
   },
   "dependencies": {
-    "pnpm": "^11.25.0"
+    "pnpm": "^11.27.1"
   }
 }

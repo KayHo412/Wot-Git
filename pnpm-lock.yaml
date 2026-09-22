@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       pnpm:
-        specifier: ^11.25.0
-        version: 11.25.0
+        specifier: ^11.27.1
+        version: 11.27.1
     devDependencies:
       typescript:
         specifier: ^5.4.0
@@ -18,7 +18,7 @@ importers:
 
   apps/api:
     dependencies:
-      '@repolens/types':
+      '@wot-git/types':
         specifier: workspace:*
         version: link:../../packages/types
       cors:
@@ -52,15 +52,15 @@ importers:
 
   apps/web:
     dependencies:
-      '@repolens/types':
-        specifier: workspace:*
-        version: link:../../packages/types
       '@tanstack/react-query':
         specifier: ^5.40.0
         version: 5.102.8(react@18.3.1)
       '@tanstack/react-table':
         specifier: ^8.17.3
         version: 8.21.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      '@wot-git/types':
+        specifier: workspace:*
+        version: link:../../packages/types
       class-variance-authority:
         specifier: ^0.7.0
         version: 0.7.1
@@ -993,8 +993,8 @@ packages:
     resolution: {integrity: sha512-TfySrs/5nm8fQJDcBDuUng3VOUKsd7S+zqvbOTiGXHfxX4wK31ard+hoNuvkicM/2YFzlpDgABOevKSsB4G/FA==}
     engines: {node: '>= 6'}
 
-  pnpm@11.25.0:
-    resolution: {integrity: sha512-XN6SW08HX3Jetx+64YpC/+eEUkeJ8ZthxzHLhyHsKKruFg4BqNWvT+2ypCzb8wDv4j2zVrDUoXtNY+EfirfJVg==}
+  pnpm@11.27.1:
+    resolution: {integrity: sha512-qB1MIbmwmksK6/kO9eUn1CYr3aMi0mCCl4y1SQI6xtnK/Jixn/+qXHHbQ4pl9wIk7beNcxEYeGH/lkgNHNyiPA==}
     engines: {node: '>=22.13'}
     hasBin: true
 
@@ -2044,7 +2044,7 @@ snapshots:
 
   pirates@4.0.7: {}
 
-  pnpm@11.25.0: {}
+  pnpm@11.27.1: {}
 
   postcss-import@15.1.0(postcss@8.5.28):
     dependencies:

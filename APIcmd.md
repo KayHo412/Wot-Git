@@ -1,4 +1,4 @@
-# RepoLens API — Testing Commands Reference
+# Wot-Git API — Testing Commands Reference
 
 All commands below are for **PowerShell** (not Command Prompt).
 To open PowerShell, type `powershell` in Command Prompt and press Enter.
@@ -7,7 +7,7 @@ To open PowerShell, type `powershell` in Command Prompt and press Enter.
 
 ## 1. Start the Server
 
-Run this from the root of the project (`D:\project\repolens`):
+Run this from the root of the project (`D:\project\Wot-Git`):
 
 ```powershell
 pnpm dev
@@ -15,7 +15,7 @@ pnpm dev
 
 You should see:
 ```
-RepoLens API running on http://localhost:3001
+Wot-Git API running on http://localhost:3001
 ```
 
 Keep this terminal open. Open a second terminal for all commands below.

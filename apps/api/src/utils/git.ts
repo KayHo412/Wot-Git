@@ -4,7 +4,7 @@ import { tmpdir } from 'os'
 import { join } from 'path'
 
 export async function cloneRepo(repoUrl: string, timeoutMs: number): Promise<string> {
-  const repoPath = await mkdtemp(join(tmpdir(), 'repolens-'))
+  const repoPath = await mkdtemp(join(tmpdir(), 'wot-git-'))
 
   const clonePromise = simpleGit().clone(repoUrl, repoPath, ['--no-tags'])
 

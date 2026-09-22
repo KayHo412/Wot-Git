@@ -1,5 +1,5 @@
 {
-  "name": "@repolens/types",
+  "name": "@wot-git/types",
   "version": "0.0.1",
   "main": "./index.ts",
   "types": "./index.ts"

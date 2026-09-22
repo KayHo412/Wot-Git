@@ -1,6 +1,6 @@
 "use client"
 import { useState, useMemo } from "react"
-import type { FileOutline } from "@repolens/types"
+import type { FileOutline } from "@wot-git/types"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { FileCode, FunctionSquare, Box, Search } from "lucide-react"

@@ -1,6 +1,6 @@
 import { readdir, readFile, stat } from 'fs/promises'
 import { join, extname, relative } from 'path'
-import type { FileOutline } from '@repolens/types'
+import type { FileOutline } from '@wot-git/types'
 
 const SUPPORTED_EXTENSIONS = new Set(['.ts', '.tsx', '.js', '.jsx', '.py', '.java', '.cs', '.go'])
 const MAX_FILE_SIZE = 500 * 1024 // 500KB — skip huge files

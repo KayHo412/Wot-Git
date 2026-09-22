@@ -1,5 +1,5 @@
 import { simpleGit } from 'simple-git'
-import type { CoChange } from '@repolens/types'
+import type { CoChange } from '@wot-git/types'
 
 export async function runCoChange(repoPath: string): Promise<CoChange[]> {
   const git = simpleGit(repoPath)

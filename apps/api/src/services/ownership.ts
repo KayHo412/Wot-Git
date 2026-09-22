@@ -1,5 +1,5 @@
 import { simpleGit } from 'simple-git'
-import type { FileOwnership } from '@repolens/types'
+import type { FileOwnership } from '@wot-git/types'
 
 export async function runOwnership(repoPath: string, filePaths: string[]): Promise<FileOwnership[]> {
   const git = simpleGit(repoPath)

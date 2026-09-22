@@ -1,6 +1,6 @@
 "use client"
 import { useState, useEffect } from "react"
-import type { CommitFrequency } from "@repolens/types"
+import type { CommitFrequency } from "@wot-git/types"
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, Brush } from "recharts"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 

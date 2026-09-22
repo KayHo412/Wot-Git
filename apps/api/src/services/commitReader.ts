@@ -1,5 +1,5 @@
 ﻿import { simpleGit } from 'simple-git'
-import type { CommitRecord, CommitFile, BugAssociatedFile } from '@repolens/types'
+import type { CommitRecord, CommitFile, BugAssociatedFile } from '@wot-git/types'
 
 /**
  * Keyword-based heuristic for bug-fix commit classification.

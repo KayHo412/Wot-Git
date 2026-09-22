@@ -8,7 +8,7 @@ import { runHotspot } from '../services/hotspot'
 import { runCommits } from '../services/commits'
 import { runCommitReader } from '../services/commitReader'
 import { runOutline } from '../services/outline'
-import type { AnalysisResult } from '@repolens/types'
+import type { AnalysisResult } from '@wot-git/types'
 
 export const analyzeRouter = Router()
 

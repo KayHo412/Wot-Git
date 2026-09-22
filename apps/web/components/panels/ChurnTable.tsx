@@ -1,6 +1,6 @@
 "use client";
 import { useState, useMemo } from "react";
-import type { FileChurn } from "@repolens/types";
+import type { FileChurn } from "@wot-git/types";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { FilePath } from "@/components/shared/FilePath";

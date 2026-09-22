@@ -1,6 +1,6 @@
 "use client"
 import { useState, useEffect } from "react"
-import type { CommitSize } from "@repolens/types"
+import type { CommitSize } from "@wot-git/types"
 import { ScatterChart, Scatter, XAxis, YAxis, Tooltip, ResponsiveContainer, ZAxis, Brush } from "recharts"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { shortenHash } from "@/lib/utils"

@@ -3,7 +3,7 @@ import "./globals.css"
 import { Providers } from "@/components/Providers"
 
 export const metadata: Metadata = {
-  title: "RepoLens",
+  title: "Wot-Git",
   description: "Git repository analytics — hotspots, churn, ownership, and bug patterns.",
 }
 

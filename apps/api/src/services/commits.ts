@@ -1,5 +1,5 @@
 import { simpleGit } from 'simple-git'
-import type { CommitFrequency, CommitSize } from '@repolens/types'
+import type { CommitFrequency, CommitSize } from '@wot-git/types'
 
 interface CommitsResult {
   frequency: CommitFrequency[]

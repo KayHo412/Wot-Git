@@ -1,6 +1,6 @@
 import { stat } from 'fs/promises'
 import { join } from 'path'
-import type { FileChurn, Hotspot } from '@repolens/types'
+import type { FileChurn, Hotspot } from '@wot-git/types'
 
 function normalize(values: number[]): number[] {
   const min = Math.min(...values)
