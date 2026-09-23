@@ -10,6 +10,32 @@ interface CoChangeTableProps {
   data: CoChange[]
 }
 
+const EXCLUDED_EXTENSIONS = new Set([
+  '.md', '.txt', '.json', '.yml', '.yaml', '.html', '.css', '.scss',
+  '.png', '.jpg', '.jpeg', '.gif', '.svg', '.ico', '.lock', '.toml'
+])
+
+const EXCLUDED_FILENAMES = new Set([
+  'package.json', 'package-lock.json', 'pnpm-lock.yaml', 'yarn.lock',
+  '.gitignore', '.eslintignore', '.prettierignore'
+])
+
+const EXCLUDED_DIRS = ['docs/', 'examples/', 'benchmarks/', 'spec/', '.github/']
+
+function isExcludedFile(path: string): boolean {
+  const normalized = path.replace(/\\/g, '/')
+  const filename = normalized.split('/').pop() || ''
+
+  if (EXCLUDED_FILENAMES.has(filename)) return true
+
+  const ext = filename.includes('.') ? '.' + filename.split('.').pop()?.toLowerCase() : ''
+  if (EXCLUDED_EXTENSIONS.has(ext)) return true
+
+  if (EXCLUDED_DIRS.some(dir => normalized.startsWith(dir) || normalized.includes('/' + dir))) return true
+
+  return false
+}
+
 export function CoChangeTable({ data }: CoChangeTableProps) {
   const [search, setSearch] = useState("")
   const [limit, setLimit] = useState(50)
@@ -20,6 +46,7 @@ export function CoChangeTable({ data }: CoChangeTableProps) {
 
   const filtered = useMemo(() => {
     return data.filter((pair) => {
+      if (isExcludedFile(pair.fileA) || isExcludedFile(pair.fileB)) return false
       if (!search) return true
       const q = search.toLowerCase()
       return pair.fileA.toLowerCase().includes(q) || pair.fileB.toLowerCase().includes(q)

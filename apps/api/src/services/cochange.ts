@@ -1,6 +1,32 @@
 import { simpleGit } from 'simple-git'
 import type { CoChange } from '@wot-git/types'
 
+const EXCLUDED_EXTENSIONS = new Set([
+  '.md', '.txt', '.json', '.yml', '.yaml', '.html', '.css', '.scss',
+  '.png', '.jpg', '.jpeg', '.gif', '.svg', '.ico', '.lock', '.toml'
+])
+
+const EXCLUDED_FILENAMES = new Set([
+  'package.json', 'package-lock.json', 'pnpm-lock.yaml', 'yarn.lock',
+  '.gitignore', '.eslintignore', '.prettierignore'
+])
+
+const EXCLUDED_DIRS = ['docs/', 'examples/', 'benchmarks/', 'spec/', '.github/']
+
+function isExcludedFile(path: string): boolean {
+  const normalized = path.replace(/\\/g, '/')
+  const filename = normalized.split('/').pop() || ''
+
+  if (EXCLUDED_FILENAMES.has(filename)) return true
+
+  const ext = filename.includes('.') ? '.' + filename.split('.').pop()?.toLowerCase() : ''
+  if (EXCLUDED_EXTENSIONS.has(ext)) return true
+
+  if (EXCLUDED_DIRS.some(dir => normalized.startsWith(dir) || normalized.includes('/' + dir))) return true
+
+  return false
+}
+
 export async function runCoChange(repoPath: string): Promise<CoChange[]> {
   const git = simpleGit(repoPath)
 
@@ -17,7 +43,7 @@ export async function runCoChange(repoPath: string): Promise<CoChange[]> {
     if (/^[a-f0-9]{40}$/.test(line)) {
       currentHash = line
       commitFiles[currentHash] = []
-    } else if (currentHash) {
+    } else if (currentHash && !isExcludedFile(line)) {
       commitFiles[currentHash].push(line)
     }
   }

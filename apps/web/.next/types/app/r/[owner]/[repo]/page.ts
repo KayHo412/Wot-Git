@@ -1,4 +1,4 @@
-// File: /Users/khoaphan/Desktop/Project/repolens/apps/web/app/r/[owner]/[repo]/page.tsx
+// File: D:\project\Wot-Git\apps\web\app\r\[owner]\[repo]\page.tsx
 import * as entry from '../../../../../../app/r/[owner]/[repo]/page.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 

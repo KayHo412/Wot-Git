@@ -99,7 +99,14 @@ export default function DashboardPage({
             />
           )}
           {activeTab === "commits" && <CommitActivity data={data.commits} />}
-          {activeTab === "commitsizes" && <CommitSizes data={data.commitSizes} />}
+          {activeTab === "commitsizes" && (
+            <CommitSizes
+              data={data.commitSizes}
+              commitLog={data.commitLog}
+              owner={owner}
+              repo={repo}
+            />
+          )}
           {activeTab === "churn" && <ChurnTable data={data.churn} />}
           {activeTab === "commitlog" && (
             <CommitLog data={data.commitLog} owner={owner} repo={repo} />
