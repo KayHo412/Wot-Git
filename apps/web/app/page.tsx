@@ -31,6 +31,7 @@ export default function LandingPage() {
   const [suggestions, setSuggestions] = useState<RepoSuggestion[]>([])
   const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false)
   const [showDropdown, setShowDropdown] = useState(false)
+  const [isAnalyzing, setIsAnalyzing] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
 
   // Debounced GitHub search
@@ -92,12 +93,22 @@ export default function LandingPage() {
     return () => document.removeEventListener("mousedown", handleClickOutside)
   }, [])
 
+  useEffect(() => {
+    if (!isAnalyzing) return
+
+    document.body.style.overflow = "hidden"
+    return () => {
+      document.body.style.overflow = ""
+    }
+  }, [isAnalyzing])
+
   function handleSubmit(e?: React.FormEvent) {
     if (e) e.preventDefault()
     setShowDropdown(false)
     const parsed = parseGithubUrl(value.trim())
     if (!parsed) { setError("Please enter a valid GitHub repository URL or owner/repo."); return }
     setError("")
+    setIsAnalyzing(true)
     router.push(`/r/${parsed.owner}/${parsed.repo}`)
   }
 
@@ -106,6 +117,7 @@ export default function LandingPage() {
     setShowDropdown(false)
     const [owner, repo] = fullName.split("/")
     if (owner && repo) {
+      setIsAnalyzing(true)
       router.push(`/r/${owner}/${repo}`)
     }
   }
@@ -136,12 +148,15 @@ export default function LandingPage() {
                   }
                 }}
                 autoFocus
+                disabled={isAnalyzing}
               />
               {isLoadingSuggestions && (
                 <Loader2 size={13} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted animate-spin" />
               )}
             </div>
-            <Button type="submit" disabled={!value.trim()}>Analyze</Button>
+            <Button type="submit" disabled={isAnalyzing || !value.trim()}>
+              {isAnalyzing ? <><Loader2 className="animate-spin" /> Analyzing...</> : "Analyze"}
+            </Button>
           </form>
 
           {/* Autocomplete Dropdown */}

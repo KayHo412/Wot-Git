@@ -1,7 +1,7 @@
 "use client"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useAnalysis } from "@/hooks/useAnalysis"
-import { Sidebar, type TabId } from "@/components/layout/Sidebar"
+import { Sidebar, TABS, type TabId } from "@/components/layout/Sidebar"
 import { RepoHeader } from "@/components/layout/RepoHeader"
 import { OverviewBar } from "@/components/panels/OverviewBar"
 import { HotspotChart } from "@/components/panels/HotspotChart"
@@ -24,6 +24,14 @@ export default function DashboardPage({
   const { owner, repo } = params
   const { data, isLoading, isError, error, refetch } = useAnalysis(owner, repo)
   const [activeTab, setActiveTab] = useState<TabId>("hotspots")
+
+  useEffect(() => {
+    document.body.style.overflow = isLoading ? "hidden" : ""
+
+    return () => {
+      document.body.style.overflow = ""
+    }
+  }, [isLoading])
 
   if (isLoading) {
     return (
@@ -72,6 +80,7 @@ export default function DashboardPage({
   }
 
   const totalCommits = data.commits.reduce((sum, c) => sum + c.count, 0)
+  const totalFiles = data.churn.length
   const totalBugFixCommits = data.commitLog.filter((c) => c.isBugFix).length
 
   return (
@@ -83,7 +92,31 @@ export default function DashboardPage({
           repo={repo}
           analyzedAt={data.analyzedAt}
           totalCommits={totalCommits}
+          totalFiles={totalFiles}
         />
+        <nav
+          aria-label="Analysis sections"
+          className="sticky top-[57px] z-10 flex gap-1 overflow-x-auto border-b border-border bg-bg px-3 py-2 lg:hidden"
+        >
+          {TABS.map(({ id, label, icon: Icon }) => {
+            const isActive = activeTab === id
+            return (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setActiveTab(id)}
+                className={`flex shrink-0 items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs transition-colors ${
+                  isActive
+                    ? "bg-accent/15 text-accent font-semibold"
+                    : "text-muted hover:bg-surface hover:text-primary"
+                }`}
+              >
+                <Icon size={13} />
+                <span>{label}</span>
+              </button>
+            )
+          })}
+        </nav>
         <main className="flex-1 p-6 space-y-6 max-w-7xl w-full mx-auto">
           {/* OverviewBar stays permanently visible at the top */}
           <OverviewBar data={data} />
