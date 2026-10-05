@@ -72,7 +72,7 @@ export function HotspotChart({ data }: HotspotChartProps) {
         <div className="relative h-[340px] w-full pt-2 select-none">
           {/* Subtle quadrant labels */}
           <>
-            <div className="absolute top-2 left-10 text-[10px] text-muted/40 uppercase font-mono pointer-events-none">
+            <div className="absolute top-1 left-12 text-[10px] text-muted/40 uppercase font-mono pointer-events-none">
               Large
             </div>
             <div className="absolute top-2 right-4 text-[10px] text-danger/50 uppercase font-mono font-semibold pointer-events-none">
@@ -81,7 +81,7 @@ export function HotspotChart({ data }: HotspotChartProps) {
             <div className="absolute bottom-6 left-10 text-[10px] text-success/50 uppercase font-mono pointer-events-none">
               Safe Zone
             </div>
-            <div className="absolute bottom-6 right-4 text-[10px] text-muted/40 uppercase font-mono pointer-events-none">
+            <div className="absolute bottom-4 right-1 text-[10px] text-muted/40 uppercase font-mono pointer-events-none">
               Active
             </div>
           </>

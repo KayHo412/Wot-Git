@@ -1,6 +1,7 @@
 import { readdir, readFile, stat } from 'fs/promises'
 import { join, extname, relative } from 'path'
 import type { FileOutline } from '@wot-git/types'
+import { isExcludedDirectory, isExcludedFile } from '../utils/fileFilter'
 
 const SUPPORTED_EXTENSIONS = new Set(['.ts', '.tsx', '.js', '.jsx', '.py', '.java', '.cs', '.go'])
 const MAX_FILE_SIZE = 500 * 1024 // 500KB — skip huge files
@@ -61,11 +62,11 @@ async function collectFiles(dir: string, baseDir: string, files: string[] = []):
 
   const entries = await readdir(dir, { withFileTypes: true })
   for (const entry of entries) {
-    if (entry.name.startsWith('.') || entry.name === 'node_modules' || entry.name === 'dist') continue
+    if (entry.isDirectory() && isExcludedDirectory(entry.name)) continue
     const fullPath = join(dir, entry.name)
     if (entry.isDirectory()) {
       await collectFiles(fullPath, baseDir, files)
-    } else if (SUPPORTED_EXTENSIONS.has(extname(entry.name))) {
+    } else if (SUPPORTED_EXTENSIONS.has(extname(entry.name)) && !isExcludedFile(relative(baseDir, fullPath))) {
       files.push(fullPath)
     }
     if (files.length >= MAX_FILES) break

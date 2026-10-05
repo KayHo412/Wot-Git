@@ -1,5 +1,6 @@
 ﻿import { simpleGit } from 'simple-git'
 import type { CommitRecord, CommitFile, BugAssociatedFile } from '@wot-git/types'
+import { isExcludedFile } from '../utils/fileFilter'
 
 /**
  * Keyword-based heuristic for bug-fix commit classification.
@@ -74,7 +75,7 @@ export async function runCommitReader(repoPath: string): Promise<CommitReaderRes
       const deletions  = parts[1] === '-' ? 0 : parseInt(parts[1], 10)
       const path       = parts.slice(2).join('\t') // handles paths containing tabs (rare)
 
-      if (!path) continue
+      if (!path || isExcludedFile(path)) continue
       files.push({ path, insertions, deletions })
     }
 
