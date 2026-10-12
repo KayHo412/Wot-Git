@@ -13,8 +13,33 @@ import { CommitLog } from "@/components/panels/CommitLog"
 import { OwnershipTable } from "@/components/panels/OwnershipTable"
 import { CoChangeTable } from "@/components/panels/CoChangeTable"
 import { OutlineTree } from "@/components/panels/OutlineTree"
+import { RepoHealthPanel } from "@/components/panels/RepoHealthPanel"
+import { useRepoHealth } from "@/hooks/useRepoHealth"
 import { ErrorState } from "@/components/shared/ErrorState"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Button } from "@/components/ui/button"
+
+function MobileAnalysisNav({ activeTab, onSelectTab }: { activeTab: TabId; onSelectTab: (tab: TabId) => void }) {
+  return (
+    <nav aria-label="Analysis sections" className="sticky top-[57px] z-10 flex gap-1 overflow-x-auto border-b border-border bg-bg px-3 py-2 lg:hidden">
+      {TABS.map(({ id, label, icon: Icon }) => {
+        const isActive = activeTab === id
+        return (
+          <button
+            key={id}
+            type="button"
+            aria-label={`${label}${isActive ? ", current section" : ""}`}
+            onClick={() => onSelectTab(id)}
+            className={`flex shrink-0 items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs transition-colors ${isActive ? "bg-accent/15 text-accent font-semibold" : "text-muted hover:bg-surface hover:text-primary"}`}
+          >
+            <Icon size={13} />
+            <span>{label}</span>
+          </button>
+        )
+      })}
+    </nav>
+  )
+}
 
 export default function DashboardPage({
   params,
@@ -24,14 +49,38 @@ export default function DashboardPage({
   const { owner, repo } = params
   const { data, isLoading, isError, error, refetch } = useAnalysis(owner, repo)
   const [activeTab, setActiveTab] = useState<TabId>("hotspots")
+  const healthQuery = useRepoHealth(owner, repo, activeTab === "health")
 
   useEffect(() => {
-    document.body.style.overflow = isLoading ? "hidden" : ""
+    document.body.style.overflow = isLoading && activeTab !== "health" ? "hidden" : ""
 
     return () => {
       document.body.style.overflow = ""
     }
-  }, [isLoading])
+  }, [isLoading, activeTab])
+
+  if (activeTab === "health" && (!data || isLoading || isError)) {
+    return (
+      <div className="flex min-h-screen bg-bg">
+        <Sidebar activeTab={activeTab} onSelectTab={setActiveTab} />
+        <div className="flex min-w-0 flex-1 flex-col">
+          <RepoHeader owner={owner} repo={repo} />
+          <MobileAnalysisNav activeTab={activeTab} onSelectTab={setActiveTab} />
+          <main className="flex-1 p-6 space-y-6 max-w-7xl w-full mx-auto">
+            <RepoHealthPanel
+              data={healthQuery.data}
+              isLoading={healthQuery.isLoading}
+              isError={healthQuery.isError}
+              error={healthQuery.error}
+              onRetry={() => healthQuery.refetch()}
+              owner={owner}
+              repo={repo}
+            />
+          </main>
+        </div>
+      </div>
+    )
+  }
 
   if (isLoading) {
     return (
@@ -46,6 +95,7 @@ export default function DashboardPage({
             </div>
             <Skeleton className="h-4 w-16" />
           </header>
+          <MobileAnalysisNav activeTab={activeTab} onSelectTab={setActiveTab} />
           <main className="flex-1 p-6 space-y-6 max-w-7xl w-full mx-auto">
             <div className="flex items-center gap-3 p-4 rounded-md border border-accent/20 bg-accent/5 text-xs text-accent">
               <div className="w-2 h-2 rounded-full bg-accent animate-ping" />
@@ -70,11 +120,8 @@ export default function DashboardPage({
     const errCode = (error as any)?.code
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-4">
-        <ErrorState
-          code={errCode}
-          message={error?.message}
-          onRetry={() => refetch()}
-        />
+        <ErrorState code={errCode} message={error?.message} onRetry={() => refetch()} />
+        <Button variant="outline" onClick={() => setActiveTab("health")}>Try repository health check</Button>
       </div>
     )
   }
@@ -94,29 +141,7 @@ export default function DashboardPage({
           totalCommits={totalCommits}
           totalFiles={totalFiles}
         />
-        <nav
-          aria-label="Analysis sections"
-          className="sticky top-[57px] z-10 flex gap-1 overflow-x-auto border-b border-border bg-bg px-3 py-2 lg:hidden"
-        >
-          {TABS.map(({ id, label, icon: Icon }) => {
-            const isActive = activeTab === id
-            return (
-              <button
-                key={id}
-                type="button"
-                onClick={() => setActiveTab(id)}
-                className={`flex shrink-0 items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs transition-colors ${
-                  isActive
-                    ? "bg-accent/15 text-accent font-semibold"
-                    : "text-muted hover:bg-surface hover:text-primary"
-                }`}
-              >
-                <Icon size={13} />
-                <span>{label}</span>
-              </button>
-            )
-          })}
-        </nav>
+        <MobileAnalysisNav activeTab={activeTab} onSelectTab={setActiveTab} />
         <main className="flex-1 p-6 space-y-6 max-w-7xl w-full mx-auto">
           {/* OverviewBar stays permanently visible at the top */}
           <OverviewBar data={data} />
@@ -147,6 +172,17 @@ export default function DashboardPage({
           {activeTab === "ownership" && <OwnershipTable data={data.ownership} />}
           {activeTab === "cochange" && <CoChangeTable data={data.cochange} />}
           {activeTab === "outline" && <OutlineTree data={data.outline} />}
+          {activeTab === "health" && (
+            <RepoHealthPanel
+              data={healthQuery.data}
+              isLoading={healthQuery.isLoading}
+              isError={healthQuery.isError}
+              error={healthQuery.error}
+              onRetry={() => healthQuery.refetch()}
+              owner={owner}
+              repo={repo}
+            />
+          )}
         </main>
       </div>
     </div>

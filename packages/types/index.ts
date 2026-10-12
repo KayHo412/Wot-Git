@@ -85,3 +85,50 @@ export interface AnalysisError {
   error: string
   code: 'REPO_NOT_FOUND' | 'REPO_TOO_LARGE' | 'CLONE_TIMEOUT' | 'INVALID_URL' | 'INTERNAL_ERROR'
 }
+
+export type HealthCategoryId = 'changes' | 'testing' | 'documentation' | 'automation' | 'security' | 'deployment'
+export type HealthStatus = 'healthy' | 'needs_attention' | 'not_applicable'
+
+export interface HealthCategory {
+  id: HealthCategoryId
+  label: string
+  score: number | null
+  status: HealthStatus
+  summary: string
+}
+
+export interface HealthFinding {
+  id: string
+  category: HealthCategoryId
+  severity: 'info' | 'warning' | 'high'
+  title: string
+  summary: string
+  path?: string
+  line?: number
+  url?: string
+}
+
+export interface HealthTimelinePoint {
+  month: string
+  overallScore: number
+  commitCount: number
+  hotspotFileCount: number
+  trackedEnvFileCount: number
+  hasReadme: boolean
+  hasTests: boolean
+  hasCi: boolean
+  hasDocker: boolean
+}
+
+export interface RepoHealthResult {
+  repoUrl: string
+  analyzedAt: string
+  projectType: 'application' | 'library' | 'unknown'
+  overallScore: number
+  categories: HealthCategory[]
+  findings: HealthFinding[]
+  timeline: HealthTimelinePoint[]
+  timelineTruncated: boolean
+  secretScan: 'current_revision_only'
+  secretScanTruncated: boolean
+}

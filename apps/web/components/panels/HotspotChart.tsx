@@ -44,8 +44,7 @@ export function HotspotChart({ data }: HotspotChartProps) {
           <div className="flex flex-col gap-1">
             <CardTitle>Hotspot Map</CardTitle>
             <p className="text-xs text-muted">
-              File size vs change frequency. High-risk hotspots appear in the
-              top-right quadrant.
+              Relative file size vs change frequency. Points in the top-right have the highest relative hotspot scores in this repository.
             </p>
           </div>
 
@@ -53,7 +52,7 @@ export function HotspotChart({ data }: HotspotChartProps) {
             {/* Legend */}
             <div className="flex items-center gap-3 text-[11px] text-muted">
               <span className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-success"></span> Safe
+                <span className="w-2 h-2 rounded-full bg-success"></span> Lower relative score
                 (&lt;0.3)
               </span>
               <span className="flex items-center gap-1.5">
@@ -74,12 +73,6 @@ export function HotspotChart({ data }: HotspotChartProps) {
           <>
             <div className="absolute top-1 left-12 text-[10px] text-muted/40 uppercase font-mono pointer-events-none">
               Large
-            </div>
-            <div className="absolute top-2 right-4 text-[10px] text-danger/50 uppercase font-mono font-semibold pointer-events-none">
-              Hotspot Zone (High Churn &amp; Large)
-            </div>
-            <div className="absolute bottom-6 left-10 text-[10px] text-success/50 uppercase font-mono pointer-events-none">
-              Safe Zone
             </div>
             <div className="absolute bottom-4 right-1 text-[10px] text-muted/40 uppercase font-mono pointer-events-none">
               Active

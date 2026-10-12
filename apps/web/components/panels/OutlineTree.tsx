@@ -1,5 +1,5 @@
 "use client"
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import type { FileOutline } from "@wot-git/types"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -18,6 +18,12 @@ export function OutlineTree({ data }: OutlineTreeProps) {
     if (!search) return fileKeys
     return fileKeys.filter((f) => f.toLowerCase().includes(search.toLowerCase()))
   }, [fileKeys, search])
+
+  useEffect(() => {
+    if (filteredFiles.length > 0 && !filteredFiles.includes(selectedFile)) {
+      setSelectedFile(filteredFiles[0])
+    }
+  }, [filteredFiles, selectedFile])
 
   const currentSymbols = data[selectedFile] ?? []
 
@@ -48,6 +54,7 @@ export function OutlineTree({ data }: OutlineTreeProps) {
               <div className="relative">
                 <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted" />
                 <Input
+                  aria-label="Filter outline files"
                   placeholder="Filter files..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
@@ -56,7 +63,9 @@ export function OutlineTree({ data }: OutlineTreeProps) {
               </div>
             </div>
             <div className="flex-1 overflow-y-auto max-h-[350px] p-1 divide-y divide-border/20">
-              {filteredFiles.map((file) => (
+              {filteredFiles.length === 0 ? (
+                <p className="px-2.5 py-4 text-center text-xs text-muted">No files match this filter.</p>
+              ) : filteredFiles.map((file) => (
                 <button
                   key={file}
                   onClick={() => setSelectedFile(file)}
@@ -66,6 +75,7 @@ export function OutlineTree({ data }: OutlineTreeProps) {
                       : "text-muted hover:text-primary hover:bg-surface/60"
                   }`}
                   title={file}
+                  aria-label={`${file}${selectedFile === file ? ", selected" : ""}`}
                 >
                   <FileCode size={13} className="shrink-0" />
                   <span className="truncate">{file}</span>
@@ -76,17 +86,21 @@ export function OutlineTree({ data }: OutlineTreeProps) {
 
           {/* Symbol detail column */}
           <div className="col-span-2 p-4 flex flex-col">
-            <div className="text-xs font-mono text-muted mb-3 flex items-center gap-2 border-b border-border/50 pb-2">
-              <span className="text-primary font-semibold">{selectedFile}</span>
-              <span>·</span>
-              <span>{currentSymbols.length} declarations</span>
-            </div>
+            {filteredFiles.length === 0 ? (
+              <div className="flex flex-1 items-center justify-center py-8 text-center text-xs text-muted">
+                Adjust the filter to show files and their symbols.
+              </div>
+            ) : <>
+              <div className="text-xs font-mono text-muted mb-3 flex items-center gap-2 border-b border-border/50 pb-2">
+                <span className="text-primary font-semibold break-all">{selectedFile}</span>
+                <span>·</span>
+                <span className="shrink-0">{currentSymbols.length} declarations</span>
+              </div>
 
-            <div className="flex-1 overflow-y-auto max-h-[300px] space-y-1.5">
-              {currentSymbols.length === 0 ? (
-                <div className="text-xs text-muted py-8 text-center">No symbols found in this file</div>
-              ) : (
-                currentSymbols.map((sym, idx) => (
+              <div className="flex-1 overflow-y-auto max-h-[300px] space-y-1.5">
+                {currentSymbols.length === 0 ? (
+                  <div className="text-xs text-muted py-8 text-center">No symbols found in this file</div>
+                ) : currentSymbols.map((sym, idx) => (
                   <div
                     key={`${sym.name}-${sym.line}-${idx}`}
                     className="flex items-center justify-between p-2 rounded bg-surface/50 border border-border/40 text-xs font-mono"
@@ -105,9 +119,9 @@ export function OutlineTree({ data }: OutlineTreeProps) {
                     </div>
                     <span className="text-muted text-[11px]">line {sym.line}</span>
                   </div>
-                ))
-              )}
-            </div>
+                ))}
+              </div>
+            </>}
           </div>
         </div>
       </CardContent>

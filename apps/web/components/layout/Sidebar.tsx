@@ -1,7 +1,7 @@
 "use client"
 import {
   Flame, Bug, BarChart2, Activity, RefreshCw,
-  GitCommit, Users, Link2, FileCode,
+  GitCommit, Users, Link2, FileCode, HeartPulse,
   type LucideIcon,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -16,6 +16,7 @@ export type TabId =
   | "ownership"
   | "cochange"
   | "outline"
+  | "health"
 
 export const TABS: Array<{ id: TabId; label: string; icon: LucideIcon }> = [
   { id: "hotspots",    label: "Hotspots",        icon: Flame },
@@ -27,6 +28,7 @@ export const TABS: Array<{ id: TabId; label: string; icon: LucideIcon }> = [
   { id: "ownership",   label: "Ownership",       icon: Users },
   { id: "cochange",    label: "Co-Change",       icon: Link2 },
   { id: "outline",     label: "Outline",         icon: FileCode },
+  { id: "health",      label: "Health",          icon: HeartPulse },
 ]
 
 interface SidebarProps {
@@ -48,6 +50,7 @@ export function Sidebar({ activeTab = "hotspots", onSelectTab }: SidebarProps) {
               key={id}
               type="button"
               onClick={() => onSelectTab?.(id)}
+              aria-label={`${label}${isActive ? ", current section" : ""}`}
               className={cn(
                 "flex items-center gap-2.5 px-3 py-2 rounded-md text-sm transition-colors text-left w-full",
                 isActive

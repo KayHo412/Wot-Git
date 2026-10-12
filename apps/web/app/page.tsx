@@ -31,6 +31,7 @@ export default function LandingPage() {
   const [suggestions, setSuggestions] = useState<RepoSuggestion[]>([])
   const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false)
   const [showDropdown, setShowDropdown] = useState(false)
+  const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
 
@@ -41,19 +42,23 @@ export default function LandingPage() {
     if (trimmed.length < 2 || trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
       setSuggestions([])
       setShowDropdown(false)
+      setActiveSuggestionIndex(-1)
       return
     }
 
+    const controller = new AbortController()
     const timer = setTimeout(async () => {
       setIsLoadingSuggestions(true)
       try {
         const res = await fetch(
-          `https://api.github.com/search/repositories?q=${encodeURIComponent(trimmed)}&per_page=5`
+          `https://api.github.com/search/repositories?q=${encodeURIComponent(trimmed)}&per_page=5`,
+          { signal: controller.signal },
         )
         if (!res.ok) {
           // Fail silently on rate limit or other API errors
           setSuggestions([])
           setShowDropdown(false)
+          setActiveSuggestionIndex(-1)
           return
         }
         const data = await res.json()
@@ -65,21 +70,28 @@ export default function LandingPage() {
               description: item.description,
             }))
           )
+          setActiveSuggestionIndex(-1)
           setShowDropdown(true)
         } else {
           setSuggestions([])
           setShowDropdown(false)
+          setActiveSuggestionIndex(-1)
         }
       } catch {
+        if (controller.signal.aborted) return
         // Fail silently
         setSuggestions([])
         setShowDropdown(false)
+        setActiveSuggestionIndex(-1)
       } finally {
-        setIsLoadingSuggestions(false)
+        if (!controller.signal.aborted) setIsLoadingSuggestions(false)
       }
     }, 500)
 
-    return () => clearTimeout(timer)
+    return () => {
+      clearTimeout(timer)
+      controller.abort()
+    }
   }, [value])
 
   // Click outside to dismiss
@@ -87,6 +99,7 @@ export default function LandingPage() {
     function handleClickOutside(e: MouseEvent) {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
         setShowDropdown(false)
+        setActiveSuggestionIndex(-1)
       }
     }
     document.addEventListener("mousedown", handleClickOutside)
@@ -122,6 +135,32 @@ export default function LandingPage() {
     }
   }
 
+  function handleInputKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === "Escape") {
+      setShowDropdown(false)
+      setActiveSuggestionIndex(-1)
+      return
+    }
+    if (!showDropdown || suggestions.length === 0) {
+      if (e.key === "ArrowDown" && suggestions.length > 0) {
+        e.preventDefault()
+        setShowDropdown(true)
+        setActiveSuggestionIndex(0)
+      }
+      return
+    }
+    if (e.key === "ArrowDown") {
+      e.preventDefault()
+      setActiveSuggestionIndex(index => (index + 1) % suggestions.length)
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault()
+      setActiveSuggestionIndex(index => index <= 0 ? suggestions.length - 1 : index - 1)
+    } else if (e.key === "Enter" && activeSuggestionIndex >= 0) {
+      e.preventDefault()
+      handleSelectSuggestion(suggestions[activeSuggestionIndex].full_name)
+    }
+  }
+
   return (
     <main className="min-h-screen flex flex-col items-center justify-center px-4">
       <div className="w-full max-w-xl flex flex-col gap-8">
@@ -139,14 +178,22 @@ export default function LandingPage() {
               <Input
                 className="pl-9 pr-8"
                 placeholder="https://github.com/owner/repo or owner/repo"
+                role="combobox"
+                aria-autocomplete="list"
+                aria-haspopup="listbox"
+                aria-expanded={showDropdown && suggestions.length > 0}
+                aria-controls={showDropdown && suggestions.length > 0 ? "repository-suggestions" : undefined}
+                aria-activedescendant={activeSuggestionIndex >= 0 ? `repository-suggestion-${activeSuggestionIndex}` : undefined}
+                aria-label="GitHub repository"
                 value={value}
                 onChange={e => { setValue(e.target.value); setError("") }}
-                onFocus={() => { if (suggestions.length > 0) setShowDropdown(true) }}
-                onKeyDown={e => {
-                  if (e.key === "Escape") {
-                    setShowDropdown(false)
+                onFocus={() => {
+                  if (suggestions.length > 0) {
+                    setActiveSuggestionIndex(-1)
+                    setShowDropdown(true)
                   }
                 }}
+                onKeyDown={handleInputKeyDown}
                 autoFocus
                 disabled={isAnalyzing}
               />
@@ -161,13 +208,17 @@ export default function LandingPage() {
 
           {/* Autocomplete Dropdown */}
           {showDropdown && suggestions.length > 0 && (
-            <div className="absolute left-0 right-0 top-full mt-1.5 z-20 rounded-md border border-border bg-surface shadow-2xl overflow-hidden divide-y divide-border/40">
-              {suggestions.map(s => (
+            <div id="repository-suggestions" role="listbox" aria-label="Repository suggestions" className="absolute left-0 right-0 top-full mt-1.5 z-20 rounded-md border border-border bg-surface shadow-2xl overflow-hidden divide-y divide-border/40">
+              {suggestions.map((s, index) => (
                 <button
                   key={s.id}
+                  id={`repository-suggestion-${index}`}
+                  role="option"
+                  aria-selected={activeSuggestionIndex === index}
                   type="button"
                   onClick={() => handleSelectSuggestion(s.full_name)}
-                  className="w-full text-left px-3.5 py-2.5 hover:bg-surface/80 transition-colors flex flex-col gap-0.5 group"
+                  onMouseEnter={() => setActiveSuggestionIndex(index)}
+                  className={`w-full text-left px-3.5 py-2.5 transition-colors flex flex-col gap-0.5 group ${activeSuggestionIndex === index ? "bg-surface/80" : "hover:bg-surface/80"}`}
                 >
                   <span className="text-xs font-mono font-semibold text-primary group-hover:text-accent transition-colors">
                     {s.full_name}

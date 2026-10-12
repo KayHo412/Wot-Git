@@ -132,6 +132,7 @@ export function CommitLog({ data, owner, repo }: CommitLogProps) {
             <div className="flex gap-1">
               <button
                 disabled={currentPage <= 1}
+                aria-label="Previous commit page"
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 className="p-1 rounded hover:bg-surface disabled:opacity-30 disabled:pointer-events-none text-primary"
               >
@@ -139,6 +140,7 @@ export function CommitLog({ data, owner, repo }: CommitLogProps) {
               </button>
               <button
                 disabled={currentPage >= totalPages}
+                aria-label="Next commit page"
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                 className="p-1 rounded hover:bg-surface disabled:opacity-30 disabled:pointer-events-none text-primary"
               >
