@@ -8,9 +8,8 @@ import type {
   HealthTimelinePoint,
   RepoHealthResult,
 } from '@wot-git/types'
+import { HEALTH_MAX_HISTORY_COMMITS, HEALTH_MAX_TIMELINE_MONTHS } from '../config/limits'
 
-const MAX_HISTORY_COMMITS = 20_000
-const MAX_TIMELINE_MONTHS = 120
 const MAX_SECRET_FILES = 2_000
 const MAX_SECRET_FILE_BYTES = 512 * 1024
 const MAX_SECRET_SCAN_BYTES = 20 * 1024 * 1024
@@ -310,8 +309,8 @@ async function buildTimeline(repoPath: string, commits: HistoricalCommit[], proj
     if (!existing || commit.date >= existing.date) latestByMonth.set(commit.month, commit)
   }
   const months = [...latestByMonth.keys()].sort()
-  const truncated = months.length > MAX_TIMELINE_MONTHS || commits.length > MAX_HISTORY_COMMITS
-  const selectedMonths = months.slice(-MAX_TIMELINE_MONTHS)
+  const truncated = months.length > HEALTH_MAX_TIMELINE_MONTHS
+  const selectedMonths = months.slice(-HEALTH_MAX_TIMELINE_MONTHS)
   const results: HealthTimelinePoint[] = []
 
   // Bound simultaneous Git subprocesses when reconstructing monthly trees.
@@ -342,15 +341,17 @@ async function buildTimeline(repoPath: string, commits: HistoricalCommit[], proj
 
 export async function runRepoHealth(repoPath: string, repoUrl: string): Promise<RepoHealthResult> {
   const git = simpleGit(repoPath)
-  const historyRaw = await git.raw(['log', `-${MAX_HISTORY_COMMITS + 1}`, '--date=short', '--format=%H%x09%ad%x09%s', '--name-only'])
+  const historyRaw = await git.raw(['log', `-${HEALTH_MAX_HISTORY_COMMITS + 1}`, '--date=short', '--format=%H%x09%ad%x09%s', '--name-only'])
   const commits = parseCommits(historyRaw)
+  const historyTruncated = commits.length > HEALTH_MAX_HISTORY_COMMITS
+  const analyzedCommits = commits.slice(0, HEALTH_MAX_HISTORY_COMMITS)
   const currentHash = await git.raw(['rev-parse', 'HEAD'])
   const treeRaw = await git.raw(['ls-tree', '-r', '--name-only', currentHash.trim()])
   const currentPaths = treeRaw.split('\n').map(path => path.trim()).filter(Boolean)
   const signals = getSignals(currentPaths)
   const projectType = await classifyProject(repoPath, currentPaths)
   const latestMonth = commits[0]?.month ?? monthOf(new Date().toISOString())
-  const risk = calculateHotspots(commits, latestMonth)
+  const risk = calculateHotspots(analyzedCommits, latestMonth)
   const secretScan = await scanCurrentSecrets(repoPath, currentPaths)
   const categories = makeCategories(signals, projectType, risk.count, risk.sourceFileCount, secretScan.findings.length > 0)
   const applicableScores = categories.map(category => category.score).filter((score): score is number => score !== null)
@@ -358,10 +359,10 @@ export async function runRepoHealth(repoPath: string, repoUrl: string): Promise<
     ? Math.round(applicableScores.reduce((sum, score) => sum + score, 0) / applicableScores.length)
     : 0
   const findings = makeFindings(signals, secretScan.findings, risk.count, risk.bugFixFiles, projectType)
-  const timeline = await buildTimeline(repoPath, commits.slice(0, MAX_HISTORY_COMMITS), projectType)
+  const timeline = await buildTimeline(repoPath, analyzedCommits, projectType)
 
   // Preserve a clear coverage signal if the commit cap was reached.
-  const timelineTruncated = timeline.truncated || commits.length > MAX_HISTORY_COMMITS
+  const timelineTruncated = timeline.truncated
 
   return {
     repoUrl,
@@ -372,6 +373,9 @@ export async function runRepoHealth(repoPath: string, repoUrl: string): Promise<
     findings,
     timeline: timeline.points,
     timelineTruncated,
+    historyCommitLimit: HEALTH_MAX_HISTORY_COMMITS,
+    historyCommitsAnalyzed: analyzedCommits.length,
+    historyTruncated,
     secretScan: 'current_revision_only',
     secretScanTruncated: secretScan.truncated,
   }

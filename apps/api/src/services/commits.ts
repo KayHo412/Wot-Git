@@ -10,7 +10,8 @@ export async function runCommits(repoPath: string, maxCommits: number): Promise<
   const git = simpleGit(repoPath)
 
   // --- Commit frequency ---
-  const logFreq = await git.raw(['log', '--format=%ad', '--date=short'])
+  // Fetch one extra commit so the limit can be checked without loading unbounded history.
+  const logFreq = await git.raw(['log', `-${maxCommits + 1}`, '--format=%ad', '--date=short'])
   const dates = logFreq.split('\n').map(d => d.trim()).filter(Boolean)
 
   if (dates.length > maxCommits) {
@@ -29,7 +30,7 @@ export async function runCommits(repoPath: string, maxCommits: number): Promise<
     .sort((a, b) => a.date.localeCompare(b.date))
 
   // --- Commit size distribution ---
-  const logStat = await git.raw(['log', '--stat', '--format=%H|%ad', '--date=short'])
+  const logStat = await git.raw(['log', `-${maxCommits}`, '--stat', '--format=%H|%ad', '--date=short'])
   const sizes: CommitSize[] = []
 
   const blocks = logStat.split(/\n(?=[a-f0-9]{40}\|)/)

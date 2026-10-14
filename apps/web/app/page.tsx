@@ -4,6 +4,8 @@ import { useRouter } from "next/navigation"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Search, Loader2 } from "lucide-react"
+import Link from "next/link"
+import { Card, CardContent } from "@/components/ui/card"
 
 interface RepoSuggestion {
   id: number
@@ -162,7 +164,7 @@ export default function LandingPage() {
   }
 
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center px-4">
+    <main className="min-h-screen flex flex-col items-center justify-center gap-8 px-4 py-10">
       <div className="w-full max-w-xl flex flex-col gap-8">
         {/* Logo */}
         <div className="text-center">
@@ -249,6 +251,15 @@ export default function LandingPage() {
             </button>
           ))}
         </div>
+
+        <Card>
+          <CardContent className="flex flex-col gap-2 p-4 sm:flex-row sm:items-start sm:justify-between">
+            <p className="text-xs leading-5 text-muted">
+              <strong className="text-primary">About bug detection:</strong> Wot-Git does not confirm that a file is broken. “Bug Files” are files changed in commits whose messages contain bug-fix keywords; this can produce false matches and miss real defects.
+            </p>
+            <Link href="/guide" className="shrink-0 text-xs font-medium text-accent hover:underline">How analysis works →</Link>
+          </CardContent>
+        </Card>
       </div>
     </main>
   )

@@ -1,41 +1,59 @@
-import { simpleGit } from 'simple-git'
+import { spawn } from 'child_process'
 import { mkdtemp, rm } from 'fs/promises'
 import { tmpdir } from 'os'
 import { join } from 'path'
 
 export async function cloneRepo(repoUrl: string, timeoutMs: number): Promise<string> {
   const repoPath = await mkdtemp(join(tmpdir(), 'wot-git-'))
-
-  const clonePromise = simpleGit().clone(repoUrl, repoPath, ['--no-tags'])
-
-  const timeoutPromise = new Promise<never>((_, reject) =>
-    setTimeout(() => {
-      const err = new Error('Clone timed out') as any
-      err.code = 'CLONE_TIMEOUT'
-      reject(err)
-    }, timeoutMs)
-  )
-
   try {
-    await Promise.race([clonePromise, timeoutPromise])
-  } catch (err: any) {
-    // Clean up temp dir if clone failed
+    await new Promise<void>((resolve, reject) => {
+      const child = spawn('git', ['clone', '--no-tags', repoUrl, repoPath], { stdio: ['ignore', 'ignore', 'pipe'] })
+      let stderr = ''
+      let timedOut = false
+      let forceKillTimer: NodeJS.Timeout | undefined
+      const timeout = setTimeout(() => {
+        timedOut = true
+        child.kill('SIGTERM')
+        forceKillTimer = setTimeout(() => child.kill('SIGKILL'), 2_000)
+      }, timeoutMs)
+
+      child.stderr.setEncoding('utf8')
+      child.stderr.on('data', (chunk: string) => {
+        // Git diagnostics are only used to map failures; keep memory bounded.
+        stderr = (stderr + chunk).slice(-4_096)
+      })
+      child.once('error', error => {
+        clearTimeout(timeout)
+        if (forceKillTimer) clearTimeout(forceKillTimer)
+        reject(error)
+      })
+      child.once('close', code => {
+        clearTimeout(timeout)
+        if (forceKillTimer) clearTimeout(forceKillTimer)
+        if (timedOut) {
+          const error = new Error('Clone timed out') as NodeJS.ErrnoException
+          error.code = 'CLONE_TIMEOUT'
+          reject(error)
+          return
+        }
+        if (code === 0) {
+          resolve()
+          return
+        }
+        if (/not found|repository/i.test(stderr)) {
+          const error = new Error('Repository not found') as NodeJS.ErrnoException
+          error.code = 'REPO_NOT_FOUND'
+          reject(error)
+          return
+        }
+        reject(new Error(stderr.trim() || `git clone exited with status ${code}`))
+      })
+    })
+    return repoPath
+  } catch (error) {
     await rm(repoPath, { recursive: true, force: true }).catch(() => {})
-
-    if (err.code === 'CLONE_TIMEOUT') throw err
-
-    // simple-git throws with message containing "not found" or "repository" for 404s
-    if (err.message?.toLowerCase().includes('not found') ||
-        err.message?.toLowerCase().includes('repository')) {
-      const notFound = new Error('Repository not found') as any
-      notFound.code = 'REPO_NOT_FOUND'
-      throw notFound
-    }
-
-    throw err
+    throw error
   }
-
-  return repoPath
 }
 
 export async function cleanupRepo(repoPath: string): Promise<void> {

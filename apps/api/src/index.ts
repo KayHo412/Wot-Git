@@ -2,6 +2,7 @@ import express from 'express'
 import cors from 'cors'
 import { analyzeRouter } from './routes/analyze'
 import { repoHealthRouter } from './routes/repoHealth'
+import { dashboardRouter } from './routes/dashboard'
 import { errorHandler } from './middleware/errorHandler'
 
 const app = express()
@@ -16,6 +17,7 @@ app.get('/health', (_req, res) => {
 
 app.use('/analyze', analyzeRouter)
 app.use('/repo-health', repoHealthRouter)
+app.use('/dashboard', dashboardRouter)
 
 app.use(errorHandler)
 

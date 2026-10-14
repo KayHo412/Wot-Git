@@ -5,6 +5,7 @@ import { tmpdir } from 'os'
 import { basename, join } from 'path'
 import { execFileSync } from 'child_process'
 import { runRepoHealth } from './repoHealth'
+import { readRepositoryOverview } from './repositoryOverview'
 
 const temporaryRepos: string[] = []
 const temporaryFiles: string[] = []
@@ -58,6 +59,9 @@ describe('runRepoHealth', () => {
     const result = await runRepoHealth(repoPath, 'https://github.com/example/sample')
     assert.equal(result.projectType, 'application')
     assert.equal(result.timeline.length, 1)
+    assert.equal(result.historyCommitLimit, 20_000)
+    assert.equal(result.historyCommitsAnalyzed, 1)
+    assert.equal(result.historyTruncated, false)
     assert.equal(result.timeline[0].hasReadme, true)
     assert.equal(result.timeline[0].hasTests, true)
     assert.equal(result.timeline[0].hasCi, true)
@@ -107,5 +111,30 @@ describe('runRepoHealth', () => {
     const result = await runRepoHealth(repoPath, 'https://github.com/example/safe-scan')
     assert.equal(result.findings.some(finding => finding.path === 'src/linked-secret.ts'), false)
     assert.equal(result.findings.some(finding => finding.title === 'Possible exposed credential'), false)
+  })
+})
+
+describe('readRepositoryOverview', () => {
+  it('extracts a README title and short introduction', async () => {
+    const repoPath = await createRepo()
+    await commit(repoPath, {
+      'README.md': '# Sample project\n\n![Build](https://example.invalid/badge.svg)\n\nA compact tool for reviewing repository history and maintenance signals.\n\n## Install\n\nMore details.\n',
+    }, 'add readme', '2024-04-01')
+
+    const result = await readRepositoryOverview(repoPath)
+    assert.equal(result.readmePath, 'README.md')
+    assert.equal(result.readmeTitle, 'Sample project')
+    assert.equal(result.readmeSummary, 'A compact tool for reviewing repository history and maintenance signals.')
+  })
+
+  it('reports missing README evidence without inventing a summary', async () => {
+    const repoPath = await createRepo()
+    await commit(repoPath, { 'src/main.ts': 'export const value = 1\n' }, 'initial source', '2024-04-02')
+
+    assert.deepEqual(await readRepositoryOverview(repoPath), {
+      readmePath: null,
+      readmeTitle: null,
+      readmeSummary: null,
+    })
   })
 })

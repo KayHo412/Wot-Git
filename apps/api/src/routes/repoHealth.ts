@@ -3,12 +3,11 @@ import NodeCache from 'node-cache'
 import type { RepoHealthResult } from '@wot-git/types'
 import { cloneRepo, cleanupRepo } from '../utils/git'
 import { runRepoHealth } from '../services/repoHealth'
+import { CLONE_TIMEOUT_MS } from '../config/limits'
 
 export const repoHealthRouter = Router()
 
 const cache = new NodeCache({ stdTTL: 60 * 60 * 6, checkperiod: 60 * 10 })
-const CLONE_TIMEOUT_MS = 60_000
-
 function isValidGithubUrl(url: string): boolean {
   try {
     const parsed = new URL(url)

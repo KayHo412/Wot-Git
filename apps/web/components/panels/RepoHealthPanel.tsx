@@ -14,11 +14,9 @@ import { AlertTriangle, CheckCircle2, CircleHelp, ExternalLink, ShieldAlert } fr
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { ErrorState } from "@/components/shared/ErrorState"
-import { Skeleton } from "@/components/ui/skeleton"
 
 interface RepoHealthPanelProps {
   data?: RepoHealthResult
-  isLoading: boolean
   isError: boolean
   error?: Error | null
   onRetry: () => void
@@ -84,13 +82,7 @@ function CategoryRow({ category }: { category: HealthCategory }) {
   )
 }
 
-export function RepoHealthPanel({ data, isLoading, isError, error, onRetry, owner, repo }: RepoHealthPanelProps) {
-  if (isLoading) {
-    return <div className="space-y-4" aria-live="polite" aria-busy="true">
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-3"><Skeleton className="h-28" /><Skeleton className="h-28" /><Skeleton className="h-28" /></div>
-      <Skeleton className="h-[300px]" /><Skeleton className="h-[280px]" />
-    </div>
-  }
+export function RepoHealthPanel({ data, isError, error, onRetry, owner, repo }: RepoHealthPanelProps) {
   if (isError || !data) {
     return <ErrorState code={(error as (Error & { code?: string }) | null)?.code} message={error?.message} onRetry={onRetry} />
   }
@@ -163,7 +155,10 @@ export function RepoHealthPanel({ data, isLoading, isError, error, onRetry, owne
           <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-muted">
             <span><span className="mr-1 inline-block h-2 w-2 rounded-full bg-accent" />Health score</span>
             <span><span className="mr-1 inline-block h-2 w-2 rounded-sm bg-border" />Commits</span>
-            <span>Timeline covers at most the 120 most recent months{data.timelineTruncated ? "; older history was omitted" : "."}</span>
+            <span>
+              Health trends use {data.historyCommitsAnalyzed.toLocaleString()} of at most {data.historyCommitLimit.toLocaleString()} recent commits{data.historyTruncated ? "; older commits were omitted" : ""}.
+              {" "}The chart shows at most the 120 most recent months{data.timelineTruncated ? "; older months were omitted" : "."}
+            </span>
           </div>
         </CardContent>
       </Card>

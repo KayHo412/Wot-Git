@@ -81,6 +81,18 @@ export interface AnalysisResult {
   bugFiles: BugAssociatedFile[]   // files associated with bug-fix commits
 }
 
+export interface RepositoryOverview {
+  readmePath: string | null
+  readmeTitle: string | null
+  readmeSummary: string | null
+}
+
+export interface DashboardResult {
+  analysis: AnalysisResult
+  health: RepoHealthResult
+  overview: RepositoryOverview
+}
+
 export interface AnalysisError {
   error: string
   code: 'REPO_NOT_FOUND' | 'REPO_TOO_LARGE' | 'CLONE_TIMEOUT' | 'INVALID_URL' | 'INTERNAL_ERROR'
@@ -129,6 +141,9 @@ export interface RepoHealthResult {
   findings: HealthFinding[]
   timeline: HealthTimelinePoint[]
   timelineTruncated: boolean
+  historyCommitLimit: number
+  historyCommitsAnalyzed: number
+  historyTruncated: boolean
   secretScan: 'current_revision_only'
   secretScanTruncated: boolean
 }
