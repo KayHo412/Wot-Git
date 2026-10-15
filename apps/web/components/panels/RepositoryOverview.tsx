@@ -3,6 +3,7 @@ import { ArrowRight, BookOpen, HeartPulse, Layers3 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { OverviewBar } from "@/components/panels/OverviewBar"
 import type { TabId } from "@/components/layout/Sidebar"
+import { SafeMarkdown } from "@/components/shared/SafeMarkdown"
 
 interface RepositoryOverviewProps {
   data: DashboardResult
@@ -27,16 +28,6 @@ export function RepositoryOverview({ data, onSelectTab }: RepositoryOverviewProp
       <section className="space-y-2">
         <p className="text-xs font-semibold uppercase tracking-wider text-accent">Repository overview</p>
         <h1 className="text-2xl font-semibold tracking-tight text-primary">{owner}/{repositoryName}</h1>
-        {overview.readmeSummary ? (
-          <p className="max-w-3xl text-sm leading-6 text-muted">{overview.readmeSummary}</p>
-        ) : (
-          <p className="max-w-3xl text-sm leading-6 text-muted">
-            {overview.readmePath
-              ? `A README was found at ${overview.readmePath}, but Wot-Git could not extract a short description from it.`
-              : "This repository has no recognized README, so Wot-Git cannot summarize its purpose from project documentation."}
-            {" "}The report below uses repository history and detected project files to show where to look next.
-          </p>
-        )}
         {overview.readmeTitle && overview.readmeTitle !== repositoryName && (
           <p className="text-xs text-muted">README title: <span className="text-primary">{overview.readmeTitle}</span></p>
         )}
@@ -81,6 +72,22 @@ export function RepositoryOverview({ data, onSelectTab }: RepositoryOverviewProp
               <span className="mt-1 block text-xs leading-5 text-muted">{description}</span>
             </button>
           ))}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center justify-between gap-3 text-sm">
+            <span>Repository README</span>
+            {overview.readmePath && <span className="truncate text-xs font-normal text-muted">{overview.readmePath}</span>}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {overview.readmeContent
+            ? <SafeMarkdown content={overview.readmeContent} imageBaseUrl={overview.readmeImageBaseUrl} />
+            : <p className="text-sm leading-6 text-muted">{overview.readmePath
+              ? `README found at ${overview.readmePath}, but it could not be displayed. It may be unreadable, unsupported, or larger than the 256 KB display limit.`
+              : "This repository has no recognized README to display. The report below summarizes available repository history and detected project files."}</p>}
         </CardContent>
       </Card>
     </div>

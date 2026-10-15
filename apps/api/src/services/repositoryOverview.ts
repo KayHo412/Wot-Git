@@ -6,6 +6,8 @@ export interface RepositoryOverview {
   readmePath: string | null
   readmeTitle: string | null
   readmeSummary: string | null
+  readmeContent: string | null
+  readmeImageBaseUrl: string | null
 }
 
 const README_MAX_BYTES = 256 * 1024
@@ -52,22 +54,36 @@ export async function readRepositoryOverview(repoPath: string): Promise<Reposito
     .split('\n')
     .filter(Boolean)
   const readmePath = paths.find(path => /^README(?:\.[^/]*)?$/i.test(path.split('/').pop() ?? '')) ?? null
-  if (!readmePath) return { readmePath: null, readmeTitle: null, readmeSummary: null }
+  if (!readmePath) return { readmePath: null, readmeTitle: null, readmeSummary: null, readmeContent: null, readmeImageBaseUrl: null }
 
   try {
     const fullPath = resolve(repoPath, readmePath)
     const fromRepo = relative(resolve(repoPath), fullPath)
     if (!fromRepo || fromRepo === '..' || fromRepo.startsWith(`..${process.platform === 'win32' ? '\\' : '/'}`) || isAbsolute(fromRepo)) {
-      return { readmePath, readmeTitle: null, readmeSummary: null }
+      return { readmePath, readmeTitle: null, readmeSummary: null, readmeContent: null, readmeImageBaseUrl: null }
     }
     const info = await lstat(fullPath)
     if (!info.isFile() || info.isSymbolicLink() || info.size > README_MAX_BYTES) {
-      return { readmePath, readmeTitle: null, readmeSummary: null }
+      return { readmePath, readmeTitle: null, readmeSummary: null, readmeContent: null, readmeImageBaseUrl: null }
     }
     const content = await readFile(fullPath, 'utf8')
     const extracted = readmeText(content)
-    return { readmePath, readmeTitle: extracted.title, readmeSummary: extracted.summary }
+    let readmeImageBaseUrl: string | null = null
+    try {
+      const remoteUrl = new URL((await git.raw(['remote', 'get-url', 'origin'])).trim())
+      const repositoryParts = remoteUrl.pathname.replace(/\.git$/, '').split('/').filter(Boolean)
+      if (remoteUrl.hostname === 'github.com' && repositoryParts.length >= 2) {
+        const ref = (await git.raw(['rev-parse', '--abbrev-ref', 'HEAD'])).trim()
+        const imageRef = ref === 'HEAD' ? (await git.raw(['rev-parse', 'HEAD'])).trim() : ref
+        const directory = readmePath.split('/').slice(0, -1)
+        const encodedPath = [...repositoryParts, ...imageRef.split('/'), ...directory].map(encodeURIComponent).join('/')
+        readmeImageBaseUrl = `https://raw.githubusercontent.com/${encodedPath}/`
+      }
+    } catch {
+      // Keep the README available even if an image base URL cannot be resolved.
+    }
+    return { readmePath, readmeTitle: extracted.title, readmeSummary: extracted.summary, readmeContent: content, readmeImageBaseUrl }
   } catch {
-    return { readmePath, readmeTitle: null, readmeSummary: null }
+    return { readmePath, readmeTitle: null, readmeSummary: null, readmeContent: null, readmeImageBaseUrl: null }
   }
 }

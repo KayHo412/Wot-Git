@@ -1,6 +1,7 @@
 import Link from "next/link"
 import { ExternalLink, ArrowLeft } from "lucide-react"
 import { formatDate } from "@/lib/utils"
+import { NavigationToggle } from "@/components/layout/NavigationToggle"
 
 interface RepoHeaderProps {
   owner: string
@@ -8,13 +9,16 @@ interface RepoHeaderProps {
   analyzedAt?: string
   totalCommits?: number
   totalFiles?: number
+  navigationOpen: boolean
+  onToggleNavigation: () => void
 }
-export function RepoHeader({ owner, repo, analyzedAt, totalCommits, totalFiles }: RepoHeaderProps) {
+export function RepoHeader({ owner, repo, analyzedAt, totalCommits, totalFiles, navigationOpen, onToggleNavigation }: RepoHeaderProps) {
   const githubUrl = `https://github.com/${owner}/${repo}`
   const hasAnalysisStats = totalCommits !== undefined && totalFiles !== undefined
   return (
     <header className="h-[57px] flex items-center justify-between gap-3 px-3 sm:px-6 border-b border-border bg-bg sticky top-0 z-10">
       <div className="flex min-w-0 flex-1 items-center gap-2">
+        <NavigationToggle isOpen={navigationOpen} onToggle={onToggleNavigation} />
         <Link
           href="/"
           className="flex shrink-0 items-center gap-1.5 text-xs text-muted hover:text-primary transition-colors mr-3 pr-3 border-r border-border"

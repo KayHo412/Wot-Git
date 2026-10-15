@@ -58,9 +58,10 @@ export function groupForTab(tab: TabId): string {
 interface SidebarProps {
   activeTab?: TabId
   onSelectTab?: (tab: TabId) => void
+  isOpen?: boolean
 }
 
-export function Sidebar({ activeTab = "hotspots", onSelectTab }: SidebarProps) {
+export function Sidebar({ activeTab = "hotspots", onSelectTab, isOpen = true }: SidebarProps) {
   const [expandedGroup, setExpandedGroup] = useState(() => groupForTab(activeTab))
 
   useEffect(() => {
@@ -68,7 +69,7 @@ export function Sidebar({ activeTab = "hotspots", onSelectTab }: SidebarProps) {
   }, [activeTab])
 
   return (
-    <aside className="hidden lg:flex flex-col w-[220px] shrink-0 border-r border-border min-h-screen sticky top-0 bg-bg">
+    <aside id="dashboard-sidebar" aria-label="Repository navigation" className={`${isOpen ? "hidden lg:flex" : "hidden"} flex-col self-start h-screen min-h-0 w-[220px] shrink-0 overflow-y-auto border-r border-border sticky top-0 bg-bg`}>
       <div className="h-[57px] flex items-center px-4 border-b border-border">
         <span className="text-sm font-semibold text-primary tracking-tight">Wot-Git</span>
       </div>

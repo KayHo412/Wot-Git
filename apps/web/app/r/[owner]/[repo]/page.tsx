@@ -1,9 +1,10 @@
 "use client"
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
+import type { DashboardStreamMessage } from "@wot-git/types"
 import { useDashboard } from "@/hooks/useDashboard"
 import { Sidebar, NAV_GROUPS, groupForTab, type TabId } from "@/components/layout/Sidebar"
 import { RepoHeader } from "@/components/layout/RepoHeader"
-import { DashboardLoading } from "@/components/layout/DashboardLoading"
+import { DashboardLoading, type DashboardProgressState } from "@/components/layout/DashboardLoading"
 import { RepositoryOverview } from "@/components/panels/RepositoryOverview"
 import { HotspotChart } from "@/components/panels/HotspotChart"
 import { BugFilesTable } from "@/components/panels/BugFilesTable"
@@ -19,13 +20,13 @@ import { ErrorState } from "@/components/shared/ErrorState"
 import { ChevronDown } from "lucide-react"
 import { ProjectGuide } from "@/components/guide/ProjectGuide"
 
-function MobileAnalysisNav({ activeTab, onSelectTab }: { activeTab: TabId; onSelectTab: (tab: TabId) => void }) {
+function MobileAnalysisNav({ activeTab, onSelectTab, isOpen }: { activeTab: TabId; onSelectTab: (tab: TabId) => void; isOpen: boolean }) {
   const [expandedGroup, setExpandedGroup] = useState(() => groupForTab(activeTab))
 
   useEffect(() => setExpandedGroup(groupForTab(activeTab)), [activeTab])
 
   return (
-    <nav aria-label="Analysis sections" className="sticky top-[57px] z-10 border-b border-border bg-bg py-2 lg:hidden">
+    <nav id="mobile-analysis-nav" aria-label="Analysis sections" hidden={!isOpen} className="sticky top-[57px] z-10 border-b border-border bg-bg py-2 lg:hidden">
       <div className="flex flex-wrap gap-1 px-3">
         {NAV_GROUPS.map(({ id, label, icon: Icon, items }) => {
           const isActiveGroup = items.some(item => item.id === activeTab)
@@ -75,9 +76,27 @@ export default function DashboardPage({
   params: { owner: string; repo: string }
 }) {
   const { owner, repo } = params
-  const { data, isLoading, isError, error, refetch } = useDashboard(owner, repo)
+  const [progress, setProgress] = useState<DashboardProgressState>({ cacheHit: false, phases: { clone: "running" } })
+  const [navigationOpen, setNavigationOpen] = useState(true)
+  const toggleNavigation = useCallback(() => setNavigationOpen(open => !open), [])
+  const handleProgress = useCallback((message: DashboardStreamMessage) => {
+    if (message.type === "cache") {
+      setProgress({ cacheHit: true, phases: {} })
+    } else if (message.type === "stage") {
+      setProgress(current => ({
+        cacheHit: false,
+        phases: { ...current.phases, [message.phase]: message.status },
+      }))
+    }
+  }, [])
+  const { data, isLoading, isError, error, refetch } = useDashboard(owner, repo, handleProgress)
   const [activeTab, setActiveTab] = useState<TabId>("overview")
   const isViewLoading = isLoading
+
+  const retryDashboard = useCallback(() => {
+    setProgress({ cacheHit: false, phases: { clone: "running" } })
+    void refetch()
+  }, [refetch])
 
   useEffect(() => {
     document.body.style.overflow = isViewLoading ? "hidden" : ""
@@ -91,8 +110,11 @@ export default function DashboardPage({
     return (
       <DashboardLoading
         activeTab={activeTab}
-        mobileNav={<MobileAnalysisNav activeTab={activeTab} onSelectTab={setActiveTab} />}
+        mobileNav={<MobileAnalysisNav activeTab={activeTab} onSelectTab={setActiveTab} isOpen={navigationOpen} />}
         onSelectTab={setActiveTab}
+        progress={progress}
+        navigationOpen={navigationOpen}
+        onToggleNavigation={toggleNavigation}
       />
     )
   }
@@ -101,7 +123,7 @@ export default function DashboardPage({
     const errCode = (error as any)?.code
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-4">
-        <ErrorState code={errCode} message={error?.message} onRetry={() => refetch()} />
+        <ErrorState code={errCode} message={error?.message} onRetry={retryDashboard} />
       </div>
     )
   }
@@ -109,10 +131,10 @@ export default function DashboardPage({
   if (activeTab === "health") {
     return (
       <div className="flex min-h-screen bg-bg">
-        <Sidebar activeTab={activeTab} onSelectTab={setActiveTab} />
+        <Sidebar activeTab={activeTab} onSelectTab={setActiveTab} isOpen={navigationOpen} />
         <div className="flex min-w-0 flex-1 flex-col">
-          <RepoHeader owner={owner} repo={repo} />
-          <MobileAnalysisNav activeTab={activeTab} onSelectTab={setActiveTab} />
+          <RepoHeader owner={owner} repo={repo} navigationOpen={navigationOpen} onToggleNavigation={toggleNavigation} />
+          <MobileAnalysisNav activeTab={activeTab} onSelectTab={setActiveTab} isOpen={navigationOpen} />
           <main className="mx-auto w-full max-w-7xl flex-1 space-y-6 p-6">
             <RepoHealthPanel
               data={data.health}
@@ -131,10 +153,10 @@ export default function DashboardPage({
   if (activeTab === "guide") {
     return (
       <div className="flex min-h-screen bg-bg">
-        <Sidebar activeTab={activeTab} onSelectTab={setActiveTab} />
+        <Sidebar activeTab={activeTab} onSelectTab={setActiveTab} isOpen={navigationOpen} />
         <div className="flex min-w-0 flex-1 flex-col">
-          <RepoHeader owner={owner} repo={repo} />
-          <MobileAnalysisNav activeTab={activeTab} onSelectTab={setActiveTab} />
+          <RepoHeader owner={owner} repo={repo} navigationOpen={navigationOpen} onToggleNavigation={toggleNavigation} />
+          <MobileAnalysisNav activeTab={activeTab} onSelectTab={setActiveTab} isOpen={navigationOpen} />
           <main className="mx-auto w-full max-w-7xl flex-1 space-y-6 p-6">
             <ProjectGuide />
           </main>
@@ -148,16 +170,18 @@ export default function DashboardPage({
 
   return (
     <div className="flex min-h-screen bg-bg">
-      <Sidebar activeTab={activeTab} onSelectTab={setActiveTab} />
+      <Sidebar activeTab={activeTab} onSelectTab={setActiveTab} isOpen={navigationOpen} />
       <div className="flex-1 flex flex-col min-w-0">
         <RepoHeader
           owner={owner}
           repo={repo}
+          navigationOpen={navigationOpen}
+          onToggleNavigation={toggleNavigation}
           analyzedAt={analysis.analyzedAt}
           totalCommits={analysis.commits.reduce((sum, c) => sum + c.count, 0)}
           totalFiles={analysis.churn.length}
         />
-        <MobileAnalysisNav activeTab={activeTab} onSelectTab={setActiveTab} />
+        <MobileAnalysisNav activeTab={activeTab} onSelectTab={setActiveTab} isOpen={navigationOpen} />
         <main className="flex-1 p-6 space-y-6 max-w-7xl w-full mx-auto">
           {/* Active Tab Panel */}
           {activeTab === "overview" && <RepositoryOverview data={data} onSelectTab={setActiveTab} />}

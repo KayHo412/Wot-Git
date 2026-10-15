@@ -85,6 +85,8 @@ export interface RepositoryOverview {
   readmePath: string | null
   readmeTitle: string | null
   readmeSummary: string | null
+  readmeContent: string | null
+  readmeImageBaseUrl: string | null
 }
 
 export interface DashboardResult {
@@ -92,6 +94,14 @@ export interface DashboardResult {
   health: RepoHealthResult
   overview: RepositoryOverview
 }
+
+export type DashboardPhase = 'clone' | 'analysis' | 'health' | 'prepare'
+
+export type DashboardStreamMessage =
+  | { type: 'stage'; phase: DashboardPhase; status: 'running' | 'complete' }
+  | { type: 'cache' }
+  | { type: 'complete'; result: DashboardResult }
+  | { type: 'error'; error: string; code: AnalysisError['code'] }
 
 export interface AnalysisError {
   error: string

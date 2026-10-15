@@ -120,11 +120,14 @@ describe('readRepositoryOverview', () => {
     await commit(repoPath, {
       'README.md': '# Sample project\n\n![Build](https://example.invalid/badge.svg)\n\nA compact tool for reviewing repository history and maintenance signals.\n\n## Install\n\nMore details.\n',
     }, 'add readme', '2024-04-01')
+    execFileSync('git', ['-C', repoPath, 'remote', 'add', 'origin', 'https://github.com/example/sample.git'])
 
     const result = await readRepositoryOverview(repoPath)
     assert.equal(result.readmePath, 'README.md')
     assert.equal(result.readmeTitle, 'Sample project')
     assert.equal(result.readmeSummary, 'A compact tool for reviewing repository history and maintenance signals.')
+    assert.match(result.readmeContent ?? '', /## Install/)
+    assert.match(result.readmeImageBaseUrl ?? '', /^https:\/\/raw\.githubusercontent\.com\/example\/sample\/[^/]+\/$/)
   })
 
   it('reports missing README evidence without inventing a summary', async () => {
@@ -135,6 +138,8 @@ describe('readRepositoryOverview', () => {
       readmePath: null,
       readmeTitle: null,
       readmeSummary: null,
+      readmeContent: null,
+      readmeImageBaseUrl: null,
     })
   })
 })
