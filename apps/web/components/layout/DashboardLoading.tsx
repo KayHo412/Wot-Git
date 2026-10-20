@@ -44,9 +44,9 @@ export function DashboardLoading({ activeTab, mobileNav, onSelectTab, progress, 
         </header>
         {mobileNav}
         <main className="mx-auto w-full max-w-7xl flex-1 space-y-6 p-6">
-          <div className="rounded-md border border-accent/20 bg-accent/5 p-4 text-xs text-accent" role="status" aria-live="polite">
+          <div className="border border-accent/20 bg-accent/5 p-4 text-xs text-accent" role="status" aria-live="polite">
             <div className="flex items-center gap-3 font-medium">
-              <div className="h-2 w-2 animate-ping rounded-full bg-accent" aria-hidden="true" />
+              <div className="h-2 w-2 bg-accent" aria-hidden="true" />
               {progress.cacheHit ? "Loading the cached repository report…" : "Preparing repository analysis…"}
             </div>
             {!progress.cacheHit && <ol className="mt-3 grid gap-2 sm:grid-cols-2">

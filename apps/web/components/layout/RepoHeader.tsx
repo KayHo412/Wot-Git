@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { ExternalLink, ArrowLeft } from "lucide-react"
+import { ExternalLink, ArrowLeft, RefreshCw } from "lucide-react"
 import { formatDate } from "@/lib/utils"
 import { NavigationToggle } from "@/components/layout/NavigationToggle"
 
@@ -11,8 +11,9 @@ interface RepoHeaderProps {
   totalFiles?: number
   navigationOpen: boolean
   onToggleNavigation: () => void
+  onRefresh?: () => void
 }
-export function RepoHeader({ owner, repo, analyzedAt, totalCommits, totalFiles, navigationOpen, onToggleNavigation }: RepoHeaderProps) {
+export function RepoHeader({ owner, repo, analyzedAt, totalCommits, totalFiles, navigationOpen, onToggleNavigation, onRefresh }: RepoHeaderProps) {
   const githubUrl = `https://github.com/${owner}/${repo}`
   const hasAnalysisStats = totalCommits !== undefined && totalFiles !== undefined
   return (
@@ -45,14 +46,19 @@ export function RepoHeader({ owner, repo, analyzedAt, totalCommits, totalFiles, 
           </div>
         )}
       </div>
-      <a
-        href={githubUrl}
-        target="_blank"
-        rel="noreferrer"
-        className="flex shrink-0 items-center gap-1.5 text-xs text-muted hover:text-primary transition-colors"
-      >
-        GitHub <ExternalLink size={12} />
-      </a>
+      <div className="flex shrink-0 items-center gap-3">
+        {onRefresh && <button type="button" onClick={onRefresh} aria-label="Refresh repository analysis and bypass cache" title="Refresh repository analysis and bypass cache" className="flex h-8 items-center justify-center gap-1.5 border border-border px-2 text-xs text-muted hover:bg-surface hover:text-primary focus-visible:outline focus-visible:outline-1 focus-visible:outline-accent">
+          <RefreshCw size={14} /><span className="hidden sm:inline">Refresh</span>
+        </button>}
+        <a
+          href={githubUrl}
+          target="_blank"
+          rel="noreferrer"
+          className="flex items-center gap-1.5 text-xs text-muted hover:text-primary"
+        >
+          GitHub <ExternalLink size={12} />
+        </a>
+      </div>
     </header>
   )
 }

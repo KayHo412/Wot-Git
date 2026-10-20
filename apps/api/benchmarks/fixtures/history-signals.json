@@ -1,0 +1,22 @@
+{
+  "description": "Small synthetic fixture with manually assigned commit and file labels for offline signal checks.",
+  "commits": [
+    { "subject": "Fix authentication bypass", "files": ["src/auth.ts", "src/session.ts"], "isBugFix": true },
+    { "subject": "Resolve parser crash", "files": ["src/parser.ts", "test/parser.test.ts"], "isBugFix": true },
+    { "subject": "close issue 42 after session expiry fix", "files": ["src/session.ts", "src/auth.ts"], "isBugFix": true },
+    { "subject": "Refactor authentication flow", "files": ["src/auth.ts", "src/session.ts"], "isBugFix": false },
+    { "subject": "Add parser examples", "files": ["src/parser.ts", "README.md"], "isBugFix": false },
+    { "subject": "Update error handling documentation", "files": ["docs/error-handling.md"], "isBugFix": false },
+    { "subject": "Add request logging", "files": ["src/logger.ts", "src/auth.ts"], "isBugFix": false },
+    { "subject": "Improve guide formatting", "files": ["README.md"], "isBugFix": false }
+  ],
+  "files": [
+    { "path": "src/auth.ts", "size": 1200, "bugAssociated": true, "highRisk": true },
+    { "path": "src/session.ts", "size": 900, "bugAssociated": true, "highRisk": true },
+    { "path": "src/parser.ts", "size": 700, "bugAssociated": true, "highRisk": false },
+    { "path": "src/logger.ts", "size": 600, "bugAssociated": false, "highRisk": false },
+    { "path": "README.md", "size": 100, "bugAssociated": false, "highRisk": false },
+    { "path": "docs/error-handling.md", "size": 800, "bugAssociated": false, "highRisk": false },
+    { "path": "test/parser.test.ts", "size": 500, "bugAssociated": true, "highRisk": false }
+  ]
+}

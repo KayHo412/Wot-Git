@@ -4,10 +4,12 @@ import type { CoChange } from "@wot-git/types"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { FilePath } from "@/components/shared/FilePath"
+import { FileInspectButton } from "@/components/shared/FileInspectButton"
 import { Search, Link2 } from "lucide-react"
 
 interface CoChangeTableProps {
   data: CoChange[]
+  onInspect?: (path: string) => void
 }
 
 const EXCLUDED_EXTENSIONS = new Set([
@@ -36,7 +38,7 @@ function isExcludedFile(path: string): boolean {
   return false
 }
 
-export function CoChangeTable({ data }: CoChangeTableProps) {
+export function CoChangeTable({ data, onInspect }: CoChangeTableProps) {
   const [search, setSearch] = useState("")
   const [limit, setLimit] = useState(50)
 
@@ -102,13 +104,13 @@ export function CoChangeTable({ data }: CoChangeTableProps) {
                     <tr key={`${pair.fileA}-${pair.fileB}`} className="hover:bg-surface/60 transition-colors">
                       <td className="py-2 px-4 text-center font-mono text-muted/60">{i + 1}</td>
                       <td className="py-2 px-4">
-                        <FilePath path={pair.fileA} />
+                        <FilePath path={pair.fileA} /><FileInspectButton path={pair.fileA} onInspect={onInspect} />
                       </td>
                       <td className="py-2 px-4 text-center text-muted/40">
                         <Link2 size={12} />
                       </td>
                       <td className="py-2 px-4">
-                        <FilePath path={pair.fileB} />
+                        <FilePath path={pair.fileB} /><FileInspectButton path={pair.fileB} onInspect={onInspect} />
                       </td>
                       <td className="py-2 px-4">
                         <div className="flex items-center justify-end gap-2">

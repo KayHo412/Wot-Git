@@ -1,6 +1,8 @@
 import { stat } from 'fs/promises'
 import { join } from 'path'
 import type { FileChurn, Hotspot } from '@wot-git/types'
+import { ANALYSIS_MAX_FILES } from '../config/limits'
+import { throwIfAborted } from '../utils/scan'
 
 function normalize(values: number[]): number[] {
   const min = Math.min(...values)
@@ -9,29 +11,38 @@ function normalize(values: number[]): number[] {
   return values.map(v => (v - min) / (max - min))
 }
 
-export async function runHotspot(repoPath: string, churn: FileChurn[]): Promise<Hotspot[]> {
-  if (churn.length === 0) return []
+export function calculateHotspotScores(churn: FileChurn[], sizes: number[]): Hotspot[] {
+  if (!churn.length) return []
+  const normalizedChurn = normalize(churn.map(file => file.churnCount))
+  const normalizedSize = normalize(sizes)
+  return churn.map((file, i) => ({
+    path: file.path,
+    churnScore: Number(normalizedChurn[i].toFixed(4)),
+    sizeScore: Number(normalizedSize[i].toFixed(4)),
+    hotspotScore: Number(((normalizedChurn[i] + normalizedSize[i]) / 2).toFixed(4)),
+  })).sort((a, b) => b.hotspotScore - a.hotspotScore || a.path.localeCompare(b.path))
+}
 
-  // Get file sizes
-  const sizes = await Promise.all(
-    churn.map(async ({ path }) => {
+export async function runHotspot(repoPath: string, churn: FileChurn[], signal?: AbortSignal): Promise<{ items: Hotspot[]; filesTruncated: boolean }> {
+  if (churn.length === 0) return { items: [], filesTruncated: false }
+
+  // Bound concurrent filesystem operations while measuring the selected file set.
+  const sizes: number[] = []
+  for (let offset = 0; offset < churn.length; offset += 64) {
+    throwIfAborted(signal)
+    const batch = churn.slice(offset, offset + 64)
+    const values = await Promise.all(batch.map(async ({ path }) => {
       try {
         const s = await stat(join(repoPath, path))
         return s.size
       } catch {
         return 0
       }
-    })
-  )
+    }))
+    sizes.push(...values)
+  }
+  throwIfAborted(signal)
 
-  const churnCounts = churn.map(f => f.churnCount)
-  const normalizedChurn = normalize(churnCounts)
-  const normalizedSize = normalize(sizes)
-
-  return churn.map((file, i) => ({
-    path: file.path,
-    churnScore: parseFloat(normalizedChurn[i].toFixed(4)),
-    sizeScore: parseFloat(normalizedSize[i].toFixed(4)),
-    hotspotScore: parseFloat(((normalizedChurn[i] + normalizedSize[i]) / 2).toFixed(4)),
-  })).sort((a, b) => b.hotspotScore - a.hotspotScore)
+  const items = calculateHotspotScores(churn, sizes)
+  return { items, filesTruncated: churn.length > ANALYSIS_MAX_FILES }
 }

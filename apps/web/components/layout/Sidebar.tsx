@@ -77,6 +77,25 @@ export function Sidebar({ activeTab = "hotspots", onSelectTab, isOpen = true }: 
         {NAV_GROUPS.map(({ id, label, icon: Icon, items }) => {
           const isExpanded = expandedGroup === id
           const groupIsActive = items.some(item => item.id === activeTab)
+          if (items.length === 1) {
+            const item = items[0]
+            const ItemIcon = item.icon
+            const isActive = activeTab === item.id
+            return <section key={id}>
+              <button
+                type="button"
+                onClick={() => onSelectTab?.(item.id)}
+                aria-current={isActive ? "page" : undefined}
+                className={cn(
+                  "flex items-center gap-2 px-3 py-2 text-sm text-left w-full focus-visible:outline focus-visible:outline-1 focus-visible:outline-accent focus-visible:outline-offset-[-1px]",
+                  isActive ? "bg-accent/10 text-accent font-semibold border-l-2 border-accent" : "text-muted hover:text-primary hover:bg-surface"
+                )}
+              >
+                <ItemIcon size={14} />
+                <span>{item.label}</span>
+              </button>
+            </section>
+          }
           return (
             <section key={id}>
               <button
@@ -85,13 +104,13 @@ export function Sidebar({ activeTab = "hotspots", onSelectTab, isOpen = true }: 
                 aria-controls={isExpanded ? `sidebar-group-${id}` : undefined}
                 onClick={() => setExpandedGroup(current => current === id ? "" : id)}
                 className={cn(
-                  "flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors text-left w-full",
+                  "flex items-center gap-2 px-3 py-2 text-sm text-left w-full focus-visible:outline focus-visible:outline-1 focus-visible:outline-accent focus-visible:outline-offset-[-1px]",
                   groupIsActive ? "text-primary font-medium" : "text-muted hover:text-primary hover:bg-surface"
                 )}
               >
                 <Icon size={14} className={groupIsActive ? "text-accent" : "text-muted"} />
                 <span className="flex-1">{label}</span>
-                <ChevronDown size={13} className={cn("transition-transform", isExpanded && "rotate-180")} />
+                <ChevronDown size={13} className={cn(isExpanded && "rotate-180")} />
               </button>
               <div id={`sidebar-group-${id}`} hidden={!isExpanded} className="ml-3 border-l border-border/70 pl-2">
                   {items.map(({ id: itemId, label: itemLabel, icon: ItemIcon }) => {
@@ -103,9 +122,9 @@ export function Sidebar({ activeTab = "hotspots", onSelectTab, isOpen = true }: 
                         onClick={() => { setExpandedGroup(id); onSelectTab?.(itemId) }}
                         aria-current={isActive ? "page" : undefined}
                         className={cn(
-                          "flex items-center gap-2 px-2.5 py-2 rounded-md text-[13px] transition-colors text-left w-full",
+                          "flex items-center gap-2 px-2.5 py-2 text-[13px] text-left w-full focus-visible:outline focus-visible:outline-1 focus-visible:outline-accent focus-visible:outline-offset-[-1px]",
                           isActive
-                            ? "bg-accent/15 text-accent font-semibold border-l-2 border-accent rounded-l-none"
+                            ? "bg-accent/10 text-accent font-semibold border-l-2 border-accent"
                             : "text-muted hover:text-primary hover:bg-surface"
                         )}
                       >

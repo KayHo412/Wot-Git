@@ -52,11 +52,12 @@ export async function streamDashboardAnalysis(
   repoUrl: string,
   onMessage: (message: DashboardStreamMessage) => void,
   signal?: AbortSignal,
+  refresh = false,
 ): Promise<DashboardResult> {
   const res = await fetch(`${API_URL}/dashboard/stream`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Accept: "text/event-stream" },
-    body: JSON.stringify({ repoUrl }),
+    body: JSON.stringify({ repoUrl, refresh }),
     signal,
   })
 

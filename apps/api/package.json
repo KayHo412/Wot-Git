@@ -5,7 +5,8 @@
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
-    "test": "tsx --test src/services/repoHealth.test.ts",
+    "test": "node --import tsx --test src/services/repoHealth.test.ts src/services/gitHistory.test.ts src/services/metricParsing.test.ts src/services/analysis.test.ts src/utils/scan.test.ts",
+    "benchmark": "node --import tsx benchmarks/benchmark-signals.ts",
     "lint": "eslint src"
   },
   "dependencies": {

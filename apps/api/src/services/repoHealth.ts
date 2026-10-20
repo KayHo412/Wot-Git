@@ -1,5 +1,4 @@
 import { lstat, readFile } from 'fs/promises'
-import { simpleGit } from 'simple-git'
 import { isAbsolute, relative, resolve } from 'path'
 import type {
   HealthCategory,
@@ -8,7 +7,9 @@ import type {
   HealthTimelinePoint,
   RepoHealthResult,
 } from '@wot-git/types'
-import { HEALTH_MAX_HISTORY_COMMITS, HEALTH_MAX_TIMELINE_MONTHS } from '../config/limits'
+import { HEALTH_MAX_FILES, HEALTH_MAX_HISTORY_COMMITS, HEALTH_MAX_TIMELINE_MONTHS } from '../config/limits'
+import { isBugFixMessage } from '../utils/bugFix'
+import { scanGit, throwIfAborted } from '../utils/scan'
 
 const MAX_SECRET_FILES = 2_000
 const MAX_SECRET_FILE_BYTES = 512 * 1024
@@ -38,7 +39,6 @@ const SOURCE_EXTENSIONS = new Set([
   '.scala', '.vue', '.svelte', '.sh', '.sql',
 ])
 
-const BUG_FIX_PATTERN = /\b(fix|bug|defect|error|issue|patch|repair|resolve|close|crash)\b/i
 const SECRET_PATTERNS: Array<{ id: string; regex: RegExp }> = [
   { id: 'private-key', regex: /-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----/ },
   { id: 'aws-access-key', regex: /\bAKIA[0-9A-Z]{16}\b/ },
@@ -92,26 +92,40 @@ async function readRegularRepoFile(repoPath: string, relativePath: string, maxBy
   return readFile(fullPath)
 }
 
-function parseCommits(raw: string): HistoricalCommit[] {
+function parseCommits(raw: string, maxCommits: number): { commits: HistoricalCommit[]; historyTruncated: boolean; filesTruncated: boolean } {
   const commits: HistoricalCommit[] = []
-  let current: HistoricalCommit | null = null
+  let current: HistoricalCommit | undefined
+  let field: 'date' | 'subject' | 'files' = 'date'
+  let historyTruncated = false
+  let filesTruncated = false
 
-  for (const line of raw.split('\n')) {
-    const header = line.match(/^([a-f0-9]{40})\t(\d{4}-\d{2}-\d{2})\t(.*)$/)
-    if (header) {
-      current = {
-        hash: header[1],
-        date: header[2],
-        month: monthOf(header[2]),
-        subject: header[3],
-        files: [],
+  for (const rawToken of raw.split('\0')) {
+    const token = rawToken.startsWith('\n') ? rawToken.slice(1) : rawToken
+    const marker = token.match(/^\x1e([a-f0-9]{40})$/)
+    if (marker) {
+      if (commits.length >= maxCommits) {
+        historyTruncated = true
+        break
       }
+      current = { hash: marker[1], date: '', month: '', subject: '', files: [] }
       commits.push(current)
-    } else if (current && line.trim()) {
-      current.files.push(line.trim())
+      field = 'date'
+      continue
+    }
+    if (!current || !token) continue
+    if (field === 'date') {
+      current.date = token
+      current.month = monthOf(token)
+      field = 'subject'
+    } else if (field === 'subject') {
+      current.subject = token
+      field = 'files'
+    } else if (isSourcePath(token)) {
+      if (current.files.length < 100) current.files.push(token)
+      else filesTruncated = true
     }
   }
-  return commits
+  return { commits, historyTruncated, filesTruncated }
 }
 
 function getSignals(paths: string[]): RepoSignals {
@@ -139,9 +153,19 @@ function getSignals(paths: string[]): RepoSignals {
   }
 }
 
-async function classifyProject(repoPath: string, paths: string[]): Promise<RepoHealthResult['projectType']> {
+function selectHealthPaths(paths: string[]): { paths: string[]; truncated: boolean } {
+  const sorted = [...new Set(paths)].sort((a, b) => a.localeCompare(b))
+  if (sorted.length <= HEALTH_MAX_FILES) return { paths: sorted, truncated: false }
+  const priority = sorted.filter(path => /(^|\/)(?:README(?:\.[^/]*)?|Dockerfile(?:\.[^/]*)?|docker-compose(?:\.[^/]*)?\.ya?ml|compose\.ya?ml|package\.json|pyproject\.toml|Cargo\.toml|go\.mod|\.env(?:\.[^/]*)?|Jenkinsfile)$/i.test(path) || /^\.github\/workflows\//i.test(path) || /(^|\/)(?:tests?|spec|__tests__)\//i.test(path))
+  const prioritySet = new Set(priority)
+  const selected = [...priority, ...sorted.filter(path => !prioritySet.has(path))].slice(0, HEALTH_MAX_FILES)
+  return { paths: selected, truncated: true }
+}
+
+async function classifyProject(repoPath: string, paths: string[], signal?: AbortSignal): Promise<RepoHealthResult['projectType']> {
   const manifests = paths.filter(path => path.endsWith('package.json'))
   for (const manifest of manifests) {
+    throwIfAborted(signal)
     try {
       const pkg = JSON.parse((await readRegularRepoFile(repoPath, manifest, 1024 * 1024)).toString('utf8'))
       const scripts = pkg.scripts ?? {}
@@ -239,13 +263,14 @@ function pointScore(signals: RepoSignals, projectType: RepoHealthResult['project
   return Math.round(applicable.reduce((sum, score) => sum + score, 0) / applicable.length)
 }
 
-async function scanCurrentSecrets(repoPath: string, paths: string[]): Promise<{ findings: Array<{ path: string; line: number; pattern: string }>; truncated: boolean }> {
+async function scanCurrentSecrets(repoPath: string, paths: string[], signal?: AbortSignal): Promise<{ findings: Array<{ path: string; line: number; pattern: string }>; truncated: boolean }> {
   const candidates = paths.filter(path => /\.(?:[cm]?[jt]sx?|py|java|cs|go|rs|ya?ml|toml|ini|conf|cfg|sh|env|json|xml|properties|pem)$/i.test(path))
   const findings: Array<{ path: string; line: number; pattern: string }> = []
   let bytesRead = 0
   let truncated = candidates.length > MAX_SECRET_FILES
 
   for (const path of candidates.slice(0, MAX_SECRET_FILES)) {
+    throwIfAborted(signal)
     if (bytesRead >= MAX_SECRET_SCAN_BYTES) {
       truncated = true
       break
@@ -292,7 +317,7 @@ function calculateHotspots(commits: HistoricalCommit[], throughMonth: string): {
       if (!isSourcePath(path)) continue
       sourceFiles.add(path)
       touched.set(path, (touched.get(path) ?? 0) + 1)
-      if (BUG_FIX_PATTERN.test(commit.subject)) bugFiles.add(path)
+      if (isBugFixMessage(commit.subject)) bugFiles.add(path)
     }
   }
   return {
@@ -302,7 +327,7 @@ function calculateHotspots(commits: HistoricalCommit[], throughMonth: string): {
   }
 }
 
-async function buildTimeline(repoPath: string, commits: HistoricalCommit[], projectType: RepoHealthResult['projectType']): Promise<{ points: HealthTimelinePoint[]; truncated: boolean }> {
+async function buildTimeline(repoPath: string, commits: HistoricalCommit[], projectType: RepoHealthResult['projectType'], signal?: AbortSignal): Promise<{ points: HealthTimelinePoint[]; truncated: boolean; filesTruncated: boolean }> {
   const latestByMonth = new Map<string, HistoricalCommit>()
   for (const commit of commits) {
     const existing = latestByMonth.get(commit.month)
@@ -312,14 +337,18 @@ async function buildTimeline(repoPath: string, commits: HistoricalCommit[], proj
   const truncated = months.length > HEALTH_MAX_TIMELINE_MONTHS
   const selectedMonths = months.slice(-HEALTH_MAX_TIMELINE_MONTHS)
   const results: HealthTimelinePoint[] = []
+  let filesTruncated = false
 
   // Bound simultaneous Git subprocesses when reconstructing monthly trees.
   for (let offset = 0; offset < selectedMonths.length; offset += 6) {
     const batch = selectedMonths.slice(offset, offset + 6)
-    const points = await Promise.all(batch.map(async month => {
+    const outcomes = await Promise.allSettled(batch.map(async month => {
+      throwIfAborted(signal)
       const commit = latestByMonth.get(month)!
-      const tree = await simpleGit(repoPath).raw(['ls-tree', '-r', '--name-only', commit.hash])
-      const signals = getSignals(tree.split('\n').map(path => path.trim()).filter(Boolean))
+      const tree = await scanGit(repoPath, signal).raw(['ls-tree', '-r', '-z', '--name-only', commit.hash])
+      const selected = selectHealthPaths(tree.split('\0').filter(Boolean))
+      filesTruncated ||= selected.truncated
+      const signals = getSignals(selected.paths)
       const risk = calculateHotspots(commits, month)
       const monthCommits = commits.filter(item => item.month === month).length
       return {
@@ -334,32 +363,37 @@ async function buildTimeline(repoPath: string, commits: HistoricalCommit[], proj
         hasDocker: signals.docker,
       }
     }))
-    results.push(...points)
+    const failed = outcomes.find((result): result is PromiseRejectedResult => result.status === 'rejected')
+    if (failed) throw failed.reason
+    results.push(...outcomes.map(result => (result as PromiseFulfilledResult<HealthTimelinePoint>).value))
   }
-  return { points: results, truncated }
+  return { points: results, truncated, filesTruncated }
 }
 
-export async function runRepoHealth(repoPath: string, repoUrl: string): Promise<RepoHealthResult> {
-  const git = simpleGit(repoPath)
-  const historyRaw = await git.raw(['log', `-${HEALTH_MAX_HISTORY_COMMITS + 1}`, '--date=short', '--format=%H%x09%ad%x09%s', '--name-only'])
-  const commits = parseCommits(historyRaw)
-  const historyTruncated = commits.length > HEALTH_MAX_HISTORY_COMMITS
-  const analyzedCommits = commits.slice(0, HEALTH_MAX_HISTORY_COMMITS)
+export async function runRepoHealth(repoPath: string, repoUrl: string, signal?: AbortSignal): Promise<RepoHealthResult> {
+  const git = scanGit(repoPath, signal)
+  const historyRaw = await git.raw(['log', '-z', `-${HEALTH_MAX_HISTORY_COMMITS + 1}`, '--date=short', '--format=%x1e%H%x00%ad%x00%s', '--name-only'])
+  const history = parseCommits(historyRaw, HEALTH_MAX_HISTORY_COMMITS)
+  const commits = history.commits
+  const historyTruncated = history.historyTruncated
+  const analyzedCommits = commits
   const currentHash = await git.raw(['rev-parse', 'HEAD'])
-  const treeRaw = await git.raw(['ls-tree', '-r', '--name-only', currentHash.trim()])
-  const currentPaths = treeRaw.split('\n').map(path => path.trim()).filter(Boolean)
+  const treeRaw = await git.raw(['ls-tree', '-r', '-z', '--name-only', currentHash.trim()])
+  const selectedPaths = selectHealthPaths(treeRaw.split('\0').filter(Boolean))
+  const currentPaths = selectedPaths.paths
   const signals = getSignals(currentPaths)
-  const projectType = await classifyProject(repoPath, currentPaths)
+  const projectType = await classifyProject(repoPath, currentPaths, signal)
   const latestMonth = commits[0]?.month ?? monthOf(new Date().toISOString())
   const risk = calculateHotspots(analyzedCommits, latestMonth)
-  const secretScan = await scanCurrentSecrets(repoPath, currentPaths)
+  const secretScan = await scanCurrentSecrets(repoPath, currentPaths, signal)
   const categories = makeCategories(signals, projectType, risk.count, risk.sourceFileCount, secretScan.findings.length > 0)
   const applicableScores = categories.map(category => category.score).filter((score): score is number => score !== null)
   const overallScore = applicableScores.length
     ? Math.round(applicableScores.reduce((sum, score) => sum + score, 0) / applicableScores.length)
     : 0
   const findings = makeFindings(signals, secretScan.findings, risk.count, risk.bugFixFiles, projectType)
-  const timeline = await buildTimeline(repoPath, analyzedCommits, projectType)
+  const timeline = await buildTimeline(repoPath, analyzedCommits, projectType, signal)
+  throwIfAborted(signal)
 
   // Preserve a clear coverage signal if the commit cap was reached.
   const timelineTruncated = timeline.truncated
@@ -376,6 +410,8 @@ export async function runRepoHealth(repoPath: string, repoUrl: string): Promise<
     historyCommitLimit: HEALTH_MAX_HISTORY_COMMITS,
     historyCommitsAnalyzed: analyzedCommits.length,
     historyTruncated,
+    historyFilesTruncated: history.filesTruncated,
+    filesTruncated: selectedPaths.truncated || timeline.filesTruncated,
     secretScan: 'current_revision_only',
     secretScanTruncated: secretScan.truncated,
   }

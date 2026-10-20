@@ -11,7 +11,7 @@ export function NavigationToggle({ isOpen, onToggle }: { isOpen: boolean; onTogg
       aria-expanded={isOpen}
       aria-controls="dashboard-sidebar mobile-analysis-nav"
       title={isOpen ? "Hide navigation" : "Show navigation"}
-      className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted transition-colors hover:bg-surface hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+      className="inline-flex h-8 w-8 shrink-0 items-center justify-center border border-transparent text-muted hover:border-border hover:bg-surface hover:text-primary focus-visible:outline focus-visible:outline-1 focus-visible:outline-accent"
     >
       <Icon size={16} aria-hidden="true" />
     </button>

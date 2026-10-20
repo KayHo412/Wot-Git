@@ -6,6 +6,7 @@ import { runAnalysis } from '../services/analysis'
 import { runRepoHealth } from '../services/repoHealth'
 import { readRepositoryOverview } from '../services/repositoryOverview'
 import { ANALYSIS_MAX_COMMITS, CLONE_TIMEOUT_MS } from '../config/limits'
+import { abortError, createScanContext, type ScanContext } from '../utils/scan'
 
 export const dashboardRouter = Router()
 
@@ -23,9 +24,9 @@ function isValidGithubUrl(url: string): boolean {
   }
 }
 
-async function createDashboardResult(normalizedUrl: string, onProgress?: ProgressCallback): Promise<DashboardResult> {
+async function createDashboardResult(normalizedUrl: string, onProgress?: ProgressCallback, scan?: ScanContext, forceRefresh = false): Promise<DashboardResult> {
   const cached = cache.get<DashboardResult>(normalizedUrl)
-  if (cached) {
+  if (cached && !forceRefresh) {
     onProgress?.({ type: 'cache' })
     return cached
   }
@@ -33,16 +34,16 @@ async function createDashboardResult(normalizedUrl: string, onProgress?: Progres
   let repoPath: string | null = null
   try {
     onProgress?.({ type: 'stage', phase: 'clone', status: 'running' })
-    repoPath = await cloneRepo(normalizedUrl, CLONE_TIMEOUT_MS)
+    repoPath = await cloneRepo(normalizedUrl, CLONE_TIMEOUT_MS, scan?.signal)
     onProgress?.({ type: 'stage', phase: 'clone', status: 'complete' })
 
     onProgress?.({ type: 'stage', phase: 'analysis', status: 'running' })
     onProgress?.({ type: 'stage', phase: 'health', status: 'running' })
-    const analysisPromise = runAnalysis(repoPath, normalizedUrl).then(result => {
+    const analysisPromise = runAnalysis(repoPath, normalizedUrl, scan?.signal).then(result => {
       onProgress?.({ type: 'stage', phase: 'analysis', status: 'complete' })
       return result
     })
-    const healthPromise = runRepoHealth(repoPath, normalizedUrl).then(result => {
+    const healthPromise = runRepoHealth(repoPath, normalizedUrl, scan?.signal).then(result => {
       onProgress?.({ type: 'stage', phase: 'health', status: 'complete' })
       return result
     })
@@ -53,7 +54,7 @@ async function createDashboardResult(normalizedUrl: string, onProgress?: Progres
     const health = (outcomes[1] as PromiseFulfilledResult<Awaited<typeof healthPromise>>).value
 
     onProgress?.({ type: 'stage', phase: 'prepare', status: 'running' })
-    const overview = await readRepositoryOverview(repoPath)
+    const overview = await readRepositoryOverview(repoPath, scan?.signal)
     onProgress?.({ type: 'stage', phase: 'prepare', status: 'complete' })
     const result: DashboardResult = { analysis, health, overview }
     cache.set(normalizedUrl, result)
@@ -73,6 +74,9 @@ function errorDetails(err: any): { status: number; message: string; code: Analys
   if (err?.code === 'CLONE_TIMEOUT') {
     return { status: 408, message: 'Clone timed out. The repository may be too large.', code: 'CLONE_TIMEOUT' }
   }
+  if (err?.code === 'SCAN_TIMEOUT') return { status: 408, message: 'Repository analysis exceeded the 3 minute scan limit. Try a smaller repository.', code: 'SCAN_TIMEOUT' }
+  if (err?.code === 'REPO_SIZE_LIMIT') return { status: 413, message: 'Repository checkout exceeds the 1 GiB scan limit.', code: 'REPO_SIZE_LIMIT' }
+  if (err?.code === 'SCAN_ABORTED') return { status: 499, message: 'Repository scan was cancelled.', code: 'SCAN_ABORTED' }
   return { status: 500, message: 'Internal server error', code: 'INTERNAL_ERROR' }
 }
 
@@ -95,18 +99,45 @@ function normalizedRepositoryUrl(req: Request, res: Response): string | null {
   return repoUrl.trim().replace(/\.git$/, '').replace(/\/$/, '')
 }
 
+function forceRefresh(req: Request): boolean {
+  return req.body?.refresh === true || req.query.refresh === 'true'
+}
+
+function requestScan(req: Request, res: Response) {
+  const controller = new AbortController()
+  const abortRequest = () => controller.abort(new Error('Client disconnected'))
+  if (req.aborted) abortRequest()
+  req.once('aborted', abortRequest)
+  const onClose = () => { if (!res.writableEnded) abortRequest() }
+  res.once('close', onClose)
+  const scan = createScanContext(controller.signal)
+  return {
+    scan,
+    dispose: () => {
+      scan.dispose()
+      req.off('aborted', abortRequest)
+      res.off('close', onClose)
+    },
+  }
+}
+
 dashboardRouter.post('/', async (req: Request, res: Response) => {
   const normalizedUrl = normalizedRepositoryUrl(req, res)
   if (!normalizedUrl) return
+  const refresh = forceRefresh(req)
   const cached = cache.get<DashboardResult>(normalizedUrl)
-  if (cached) return res.json({ ...cached, fromCache: true })
+  if (cached && !refresh) return res.json({ ...cached, fromCache: true })
+  const { scan, dispose } = requestScan(req, res)
   try {
-    const result = await createDashboardResult(normalizedUrl)
+    const result = await createDashboardResult(normalizedUrl, undefined, scan, refresh)
     return res.json(result)
   } catch (err: any) {
-    const details = errorDetails(err)
+    const details = errorDetails(abortError(scan.signal) ?? err)
     if (details.status === 500) console.error('Dashboard analysis error:', err)
+    if (res.destroyed) return
     return res.status(details.status).json({ error: details.message, code: details.code })
+  } finally {
+    dispose()
   }
 })
 
@@ -122,19 +153,22 @@ dashboardRouter.post('/stream', async (req: Request, res: Response) => {
     'X-Accel-Buffering': 'no',
   })
   res.flushHeaders()
+  const { scan, dispose } = requestScan(req, res)
+  const refresh = forceRefresh(req)
   const heartbeat = setInterval(() => {
     if (!res.destroyed && !res.writableEnded) res.write(': keep-alive\n\n')
   }, 15_000)
 
   try {
-    const result = await createDashboardResult(normalizedUrl, message => writeStreamMessage(res, message))
+    const result = await createDashboardResult(normalizedUrl, message => writeStreamMessage(res, message), scan, refresh)
     writeStreamMessage(res, { type: 'complete', result })
   } catch (err: any) {
-    const details = errorDetails(err)
+    const details = errorDetails(abortError(scan.signal) ?? err)
     if (details.status === 500) console.error('Dashboard analysis stream error:', err)
-    writeStreamMessage(res, { type: 'error', error: details.message, code: details.code })
+    if (!res.destroyed) writeStreamMessage(res, { type: 'error', error: details.message, code: details.code })
   } finally {
     clearInterval(heartbeat)
+    dispose()
     if (!res.destroyed && !res.writableEnded) res.end()
   }
 })

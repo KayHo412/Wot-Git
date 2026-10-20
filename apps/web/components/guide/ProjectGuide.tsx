@@ -19,9 +19,9 @@ function GuideCard({ title, children }: { title: string; children: React.ReactNo
 
 function Disclosure({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <details className="group rounded-md border border-border bg-bg/40">
+    <details className="group border border-border bg-bg/40">
       <summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-3 text-sm font-medium text-primary outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent [&::-webkit-details-marker]:hidden">
-        <ChevronDown size={15} aria-hidden="true" className="shrink-0 text-accent transition-transform group-open:rotate-180" />
+        <ChevronDown size={15} aria-hidden="true" className="shrink-0 text-accent group-open:rotate-180" />
         <span>{title}</span>
       </summary>
       <div className="space-y-3 border-t border-border px-4 py-3 text-sm leading-6 text-muted">{children}</div>
@@ -53,7 +53,7 @@ function Calculations() {
     <p>Examples use invented small numbers. Some panels omit documentation, generated, media, dependency, or other non-source files according to their analysis filter.</p>
     <Disclosure title="Commit activity and analysis limits">
       <p>Commits are grouped by Git author date. The overview total is the sum of daily counts. Its distinct file total comes from the churn results. Example: 3 commits Monday plus 2 Tuesday gives 5 commits.</p>
-      <p>Full analysis is capped at 50,000 commits. Repositories beyond that limit are rejected by the full analysis endpoint. Health history uses a separate limit of up to 20,000 recent commits.</p>
+      <p>Analysis uses up to the 10,000 most recent commits. When older history is omitted, the report marks history as truncated. Scans also stop after 3 minutes; clones stop after 60 seconds and temporary checkouts are limited to 1 GiB. A report with limited coverage should be interpreted as partial evidence.</p>
     </Disclosure>
     <Disclosure title="Commit sizes, median, buckets, and atomic ratio">
       <p><strong className="text-primary">Size per commit:</strong> inserted lines + deleted lines. Binary changes may have no line counts. The median is the middle size after sorting; for an even number of commits, the two middle values are averaged and rounded.</p>
@@ -67,15 +67,15 @@ function Calculations() {
       <p>Normalize each included file’s churn and current byte size separately from 0 to 1 using (value − repository minimum) ÷ (repository maximum − repository minimum). If all files have the same value, each receives 0.5. Average the two normalized values. Example: churn 0.75 and size 0.25 gives a score of 0.50. Scores are relative to this repository.</p>
     </Disclosure>
     <Disclosure title="Bug-associated files and commit share">
-      <p>A commit is matched by its subject using a case-insensitive keyword matcher that may match inside longer words. Each included file touched in a matching commit receives one association.</p>
+      <p>A commit is matched by its subject using case-insensitive whole words: “fix,” “bug,” “defect,” “error,” “issue,” “patch,” “repair,” “resolve,” “close,” or “crash.” Each included file touched in a matching commit receives one association.</p>
       <p><strong className="text-primary">Bug-fix count:</strong> matching commits that touched the file. <strong className="text-primary">Share:</strong> that file’s matching commit count ÷ all matching commits × 100. Example: 2 matching commits touching a file out of 10 matching commits gives 20%.</p>
     </Disclosure>
     <Disclosure title="Ownership and single-author flag">
-      <p>For each file, count commits per author email across its history. The dominant author has the highest count. The single-author flag is true when only one distinct author email appears. Example: 8 commits by A and 2 by B means A is dominant and the file is not single-author.</p>
+      <p>For each file, count author emails in the analyzed recent-history window, up to 10,000 commits and 100 distinct authors per file. The dominant author has the highest count. The single-author flag is true when only one distinct author email appears in that window. Example: 8 commits by A and 2 by B means A is dominant and the file is not single-author.</p>
       <p>Git email identifies contributors, so aliases belonging to one person may be counted separately.</p>
     </Disclosure>
     <Disclosure title="Co-change pairs and result limit">
-      <p>Count commits where each pair of included files changed together. Pairs seen only once are removed; remaining pairs are sorted by count and capped at the top 200. Example: A and B changed together in 4 commits, so their count is 4. This is correlation, not proof of a required dependency.</p>
+      <p>Count commits where each pair of included files changed together in the analyzed recent-history window. Commits with more than 100 included files are capped for this calculation; the report marks this when it affects coverage. Pairs seen only once are removed; remaining pairs are sorted by count and capped at the top 200. Example: A and B changed together in 4 commits, so their count is 4. This is correlation, not proof of a required dependency.</p>
     </Disclosure>
     <Disclosure title="Code outline coverage">
       <p>The outline uses line-based patterns, not a full language parser, to find function and class declarations in TypeScript, JavaScript, Python, Java, C#, and Go. It scans up to 300 supported files and skips files larger than 500 KB. Complex syntax can be missed or misread.</p>
@@ -89,7 +89,7 @@ function Calculations() {
       <p>Detection uses common names and conventions: tests in test/tests/spec/__tests__ folders or common test filenames/configs; docs folders or Markdown-like files; common GitHub, GitLab, CircleCI, Azure, Jenkins, and Buildkite files; and Dockerfile or Compose names. Custom conventions may be missed.</p>
     </Disclosure>
     <Disclosure title="Health history and secret-scan limits">
-      <p>Health history uses up to 20,000 commits and charts up to 120 months. Each monthly point uses the last commit tree in that month. Historical file contents are not scanned, so past secret patterns are not part of trend scores; historical secret hygiene reflects only whether a tracked environment file was present.</p>
+      <p>Health history uses up to 10,000 commits and charts up to 120 months. Each monthly point uses the last commit tree in that month. Each commit contributes at most 100 source paths to historical change signals; affected coverage is marked as truncated. Current and monthly repository checks prioritize at most 10,000 files. Historical file contents are not scanned, so past secret patterns are not part of trend scores; historical secret hygiene reflects only whether a tracked environment file was present.</p>
       <p>The current secret scan checks up to 2,000 files, 512 KB per file, and 20 MB total. It looks for private-key headers, common AWS/GitHub token shapes, and long credential assignments.</p>
     </Disclosure>
   </GuideCard>
@@ -104,10 +104,12 @@ const FAQS = [
   { q: "How are Health trends calculated?", a: "Wot-Git reconstructs up to 120 monthly points from recent Git history, using the last commit tree in each month. It is a limited historical estimate; old file contents are not scanned for secret patterns." },
   { q: "Can Wot-Git detect every exposed secret?", a: "No. It checks selected text/config files in the current revision for a small set of common patterns and has file and byte limits. It can miss secrets and can flag false positives. Matched values are redacted from results." },
   { q: "Why might a signal be missing or wrong?", a: "Wot-Git recognizes common names, extensions, commit-message words, and configuration files. Different conventions, aliases, generated files, limited history, and unsupported language syntax affect results." },
+  { q: "Why does the report say scan coverage is limited?", a: "Wot-Git caps history at 10,000 recent commits, the analyzed file set at 10,000 files, commit and co-change file lists at 100 included files per commit, ownership at 100 authors per file, and the outline at 300 files. It also stops after 3 minutes and limits temporary checkouts to 1 GiB. Limited metrics are labeled so you can account for missing older history or files." },
+  { q: "Can I get a fresh report instead of a cached one?", a: "Yes. Use the refresh control in the repository header to bypass the dashboard cache and scan the public repository again. The normal cache lifetime remains 6 hours for the combined dashboard." },
   { q: "Can I analyze a private repository?", a: "No. The current service accepts public GitHub repositories only." },
   { q: "Does Wot-Git change repository files?", a: "No. It clones the public repository for analysis, removes its temporary clone afterward, and does not push changes or open pull requests." },
   { q: "Does Wot-Git store my report?", a: "The API caches analysis results in process memory for up to 24 hours and Health results for up to 6 hours. The combined dashboard response uses a 6-hour cache. Cached data disappears when the API process restarts. Temporary clone directories are removed after scans." },
-  { q: "Why does the report not include every commit or file?", a: "Analysis has commit and file filters and explicit history or outline limits. Health trends use at most 20,000 commits and 120 months; the code outline scans up to 300 supported files. See Calculations for exact coverage." },
+  { q: "Why does the report not include every commit or file?", a: "Analysis has commit and file filters and explicit history or outline limits. Git history uses at most 10,000 recent commits and the code outline scans up to 300 supported files. See Calculations for exact coverage." },
 ]
 
 function FAQ() {
@@ -130,7 +132,7 @@ function UsageTerms() {
 function DataPrivacy() {
   return <GuideCard title="Data and privacy">
     <Disclosure title="Repository handling and caching">
-      <div className="flex items-start gap-2"><Database size={16} className="mt-1 shrink-0 text-accent" /><p>The API clones a public GitHub repository into a temporary directory and removes that directory after analysis. Separate analysis results are cached in process memory for up to 24 hours and Health results for up to 6 hours. The combined dashboard response is cached for 6 hours. Cache contents disappear when the API process restarts.</p></div>
+      <div className="flex items-start gap-2"><Database size={16} className="mt-1 shrink-0 text-accent" /><p>The API clones a public GitHub repository into a temporary directory (up to 1 GiB) and removes that directory after analysis. A clone is limited to 60 seconds and a complete scan to 3 minutes. Separate analysis results are cached in process memory for up to 24 hours and Health results for up to 6 hours. The combined dashboard response is cached for 6 hours; the repository-header refresh control bypasses that cache. Cache contents disappear when the API process restarts.</p></div>
     </Disclosure>
     <Disclosure title="Secret scanning">
       <div className="flex items-start gap-2"><ShieldCheck size={16} className="mt-1 shrink-0 text-accent" /><p>Health scans selected text/config files in the current revision for a small set of credential patterns. It reports the file and line, redacts matched values, and does not scan historical file contents for secrets. It does not run repository scripts or tests.</p></div>
@@ -169,7 +171,7 @@ export function ProjectGuide({ standalone = false }: { standalone?: boolean }) {
               setActiveTab(target.id)
               document.getElementById(`guide-tab-${target.id}`)?.focus()
             }
-          }} className={`shrink-0 rounded-md px-3 py-2 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${activeTab === id ? "bg-accent/15 text-accent" : "text-muted hover:bg-surface hover:text-primary"}`}>
+          }} className={`shrink-0 border px-3 py-2 text-xs font-medium focus-visible:outline focus-visible:outline-1 focus-visible:outline-accent ${activeTab === id ? "border-accent/50 bg-accent/10 text-accent" : "border-transparent text-muted hover:border-border hover:bg-surface hover:text-primary"}`}>
             {label}
           </button>
         ))}

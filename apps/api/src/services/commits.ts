@@ -1,27 +1,56 @@
-import { simpleGit } from 'simple-git'
 import type { CommitFrequency, CommitSize } from '@wot-git/types'
+import { scanGit, throwIfAborted } from '../utils/scan'
 
 interface CommitsResult {
   frequency: CommitFrequency[]
   sizes: CommitSize[]
+  commitsAnalyzed: number
+  historyTruncated: boolean
 }
 
-export async function runCommits(repoPath: string, maxCommits: number): Promise<CommitsResult> {
-  const git = simpleGit(repoPath)
+export function parseCommitSizes(logStat: string): CommitSize[] {
+  const sizes: CommitSize[] = []
+  let current: CommitSize | undefined
+  const tokens = logStat.split('\0')
+  for (let index = 0; index < tokens.length; index++) {
+    const token = tokens[index]
+    if (token.startsWith('COMMIT_START\n')) {
+      if (current) sizes.push(current)
+      const lines = token.split('\n')
+      const hash = lines[1]?.trim()
+      const date = lines[2]?.trim()
+      current = hash && /^[a-f0-9]{40}$/.test(hash) && date
+        ? { hash, date, insertions: 0, deletions: 0 }
+        : undefined
+      continue
+    }
+    if (!current || !token) continue
+    const firstTab = token.indexOf('\t')
+    const secondTab = token.indexOf('\t', firstTab + 1)
+    if (firstTab < 0 || secondTab < 0) continue
+    const insertions = token.slice(0, firstTab) === '-' ? 0 : Number(token.slice(0, firstTab)) || 0
+    const deletions = token.slice(firstTab + 1, secondTab) === '-' ? 0 : Number(token.slice(firstTab + 1, secondTab)) || 0
+    current.insertions += insertions
+    current.deletions += deletions
+    if (!token.slice(secondTab + 1)) index += 2 // Rename rows carry old and new paths as separate NUL fields.
+  }
+  if (current) sizes.push(current)
+  return sizes
+}
+
+export async function runCommits(repoPath: string, maxCommits: number, signal?: AbortSignal): Promise<CommitsResult> {
+  const git = scanGit(repoPath, signal)
 
   // --- Commit frequency ---
   // Fetch one extra commit so the limit can be checked without loading unbounded history.
   const logFreq = await git.raw(['log', `-${maxCommits + 1}`, '--format=%ad', '--date=short'])
   const dates = logFreq.split('\n').map(d => d.trim()).filter(Boolean)
 
-  if (dates.length > maxCommits) {
-    const err = new Error('Repo too large') as any
-    err.code = 'REPO_TOO_LARGE'
-    throw err
-  }
+  const historyTruncated = dates.length > maxCommits
+  const analyzedDates = dates.slice(0, maxCommits)
 
   const frequencyMap: Record<string, number> = {}
-  for (const date of dates) {
+  for (const date of analyzedDates) {
     frequencyMap[date] = (frequencyMap[date] || 0) + 1
   }
 
@@ -30,32 +59,9 @@ export async function runCommits(repoPath: string, maxCommits: number): Promise<
     .sort((a, b) => a.date.localeCompare(b.date))
 
   // --- Commit size distribution ---
-  const logStat = await git.raw(['log', `-${maxCommits}`, '--stat', '--format=%H|%ad', '--date=short'])
-  const sizes: CommitSize[] = []
+  const logStat = await git.raw(['log', '-z', `-${maxCommits}`, '--numstat', '--format=COMMIT_START%n%H%n%ad', '--date=short'])
+  const sizes = parseCommitSizes(logStat)
 
-  const blocks = logStat.split(/\n(?=[a-f0-9]{40}\|)/)
-  for (const block of blocks) {
-    const lines = block.split('\n')
-    const header = lines[0]
-    if (!header) continue
-
-    const [hash, date] = header.split('|')
-    if (!hash || !date) continue
-
-    let insertions = 0
-    let deletions = 0
-
-    // Parse the summary line: "N files changed, X insertions(+), Y deletions(-)"
-    const summary = lines.find(l => l.includes('changed'))
-    if (summary) {
-      const ins = summary.match(/(\d+) insertion/)
-      const del = summary.match(/(\d+) deletion/)
-      if (ins) insertions = parseInt(ins[1], 10)
-      if (del) deletions = parseInt(del[1], 10)
-    }
-
-    sizes.push({ hash: hash.trim(), date: date.trim(), insertions, deletions })
-  }
-
-  return { frequency, sizes }
+  throwIfAborted(signal)
+  return { frequency, sizes, commitsAnalyzed: analyzedDates.length, historyTruncated }
 }

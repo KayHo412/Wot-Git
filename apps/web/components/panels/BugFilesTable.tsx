@@ -4,6 +4,7 @@ import type { BugAssociatedFile } from "@wot-git/types"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { FilePath } from "@/components/shared/FilePath"
+import { FileInspectButton } from "@/components/shared/FileInspectButton"
 import { HashBadge } from "@/components/shared/HashBadge"
 import { Search } from "lucide-react"
 
@@ -12,9 +13,10 @@ interface BugFilesTableProps {
   totalBugFixCommits: number
   owner: string
   repo: string
+  onInspect?: (path: string) => void
 }
 
-export function BugFilesTable({ data, totalBugFixCommits, owner, repo }: BugFilesTableProps) {
+export function BugFilesTable({ data, totalBugFixCommits, owner, repo, onInspect }: BugFilesTableProps) {
   const [search, setSearch] = useState("")
   const [limit, setLimit] = useState(50)
 
@@ -71,7 +73,7 @@ export function BugFilesTable({ data, totalBugFixCommits, owner, repo }: BugFile
                     <tr key={f.path} className="hover:bg-surface/60 transition-colors">
                       <td className="py-2 px-4 text-center font-mono text-muted/60">{i + 1}</td>
                       <td className="py-2 px-4">
-                        <FilePath path={f.path} />
+                        <FilePath path={f.path} /><FileInspectButton path={f.path} onInspect={onInspect} />
                       </td>
                       <td className="py-2 px-4 text-right font-mono font-bold text-danger">
                         {f.bugFixCount.toLocaleString()}

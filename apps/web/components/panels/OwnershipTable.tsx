@@ -4,13 +4,15 @@ import type { FileOwnership } from "@wot-git/types"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { FilePath } from "@/components/shared/FilePath"
+import { FileInspectButton } from "@/components/shared/FileInspectButton"
 import { Search, AlertTriangle, ShieldCheck } from "lucide-react"
 
 interface OwnershipTableProps {
   data: FileOwnership[]
+  onInspect?: (path: string) => void
 }
 
-export function OwnershipTable({ data }: OwnershipTableProps) {
+export function OwnershipTable({ data, onInspect }: OwnershipTableProps) {
   const [search, setSearch] = useState("")
   const [busFactorOnly, setBusFactorOnly] = useState(false)
   const [limit, setLimit] = useState(50)
@@ -94,7 +96,7 @@ export function OwnershipTable({ data }: OwnershipTableProps) {
                   >
                     <td className="py-2 px-4 text-center font-mono text-muted/60">{i + 1}</td>
                     <td className="py-2 px-4">
-                      <FilePath path={f.path} />
+                      <FilePath path={f.path} /><FileInspectButton path={f.path} onInspect={onInspect} />
                     </td>
                     <td className="py-2 px-4 text-center font-mono text-muted">
                       {f.authors.length}

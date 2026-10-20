@@ -2,6 +2,7 @@ import { readdir, readFile, stat } from 'fs/promises'
 import { join, extname, relative } from 'path'
 import type { FileOutline } from '@wot-git/types'
 import { isExcludedDirectory, isExcludedFile } from '../utils/fileFilter'
+import { throwIfAborted } from '../utils/scan'
 
 const SUPPORTED_EXTENSIONS = new Set(['.ts', '.tsx', '.js', '.jsx', '.py', '.java', '.cs', '.go'])
 const MAX_FILE_SIZE = 500 * 1024 // 500KB — skip huge files
@@ -57,32 +58,38 @@ function extractOutline(content: string, ext: string): FileOutline[] {
   return results
 }
 
-async function collectFiles(dir: string, baseDir: string, files: string[] = []): Promise<string[]> {
-  if (files.length >= MAX_FILES) return files
+async function collectFiles(dir: string, baseDir: string, signal?: AbortSignal): Promise<{ files: string[]; truncated: boolean }> {
+  const files: string[] = []
+  let truncated = false
+  const pending = [dir]
 
-  const entries = await readdir(dir, { withFileTypes: true })
-  for (const entry of entries) {
-    if (entry.isDirectory() && isExcludedDirectory(entry.name)) continue
-    const fullPath = join(dir, entry.name)
-    if (entry.isDirectory()) {
-      await collectFiles(fullPath, baseDir, files)
-    } else if (SUPPORTED_EXTENSIONS.has(extname(entry.name)) && !isExcludedFile(relative(baseDir, fullPath))) {
-      files.push(fullPath)
+  while (pending.length) {
+    throwIfAborted(signal)
+    const current = pending.pop()!
+    const entries = (await readdir(current, { withFileTypes: true })).sort((a, b) => a.name.localeCompare(b.name))
+    for (const entry of entries) {
+      if (entry.isDirectory() && isExcludedDirectory(entry.name)) continue
+      const fullPath = join(current, entry.name)
+      if (entry.isDirectory()) pending.push(fullPath)
+      else if (SUPPORTED_EXTENSIONS.has(extname(entry.name)) && !isExcludedFile(relative(baseDir, fullPath))) {
+        if (files.length < MAX_FILES) files.push(fullPath)
+        else truncated = true
+      }
     }
-    if (files.length >= MAX_FILES) break
   }
-  return files
+  return { files: files.sort((a, b) => a.localeCompare(b)), truncated }
 }
 
-export async function runOutline(repoPath: string): Promise<Record<string, FileOutline[]>> {
+export async function runOutline(repoPath: string, signal?: AbortSignal): Promise<{ items: Record<string, FileOutline[]>; truncated: boolean; fileLimit: number }> {
   const result: Record<string, FileOutline[]> = {}
 
   try {
-    const files = await collectFiles(repoPath, repoPath)
+    const collected = await collectFiles(repoPath, repoPath, signal)
 
     await Promise.all(
-      files.map(async (filePath) => {
+      collected.files.map(async (filePath) => {
         try {
+          throwIfAborted(signal)
           const s = await stat(filePath)
           if (s.size > MAX_FILE_SIZE) return
 
@@ -95,13 +102,15 @@ export async function runOutline(repoPath: string): Promise<Record<string, FileO
             result[relativePath] = outline
           }
         } catch {
-          // Skip unreadable files
+          throwIfAborted(signal)
         }
       })
     )
+    return { items: result, truncated: collected.truncated, fileLimit: MAX_FILES }
   } catch {
-    // Best-effort; return empty if anything goes wrong
+    throwIfAborted(signal)
+    // Best-effort; return empty if anything goes wrong.
   }
 
-  return result
+  return { items: result, truncated: false, fileLimit: MAX_FILES }
 }

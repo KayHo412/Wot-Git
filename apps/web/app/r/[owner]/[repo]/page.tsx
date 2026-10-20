@@ -19,6 +19,8 @@ import { RepoHealthPanel } from "@/components/panels/RepoHealthPanel"
 import { ErrorState } from "@/components/shared/ErrorState"
 import { ChevronDown } from "lucide-react"
 import { ProjectGuide } from "@/components/guide/ProjectGuide"
+import { FileEvidencePanel } from "@/components/panels/FileEvidencePanel"
+import { ScanCoverageNotice } from "@/components/panels/ScanCoverageNotice"
 
 function MobileAnalysisNav({ activeTab, onSelectTab, isOpen }: { activeTab: TabId; onSelectTab: (tab: TabId) => void; isOpen: boolean }) {
   const [expandedGroup, setExpandedGroup] = useState(() => groupForTab(activeTab))
@@ -31,6 +33,21 @@ function MobileAnalysisNav({ activeTab, onSelectTab, isOpen }: { activeTab: TabI
         {NAV_GROUPS.map(({ id, label, icon: Icon, items }) => {
           const isActiveGroup = items.some(item => item.id === activeTab)
           const isExpanded = expandedGroup === id
+          if (items.length === 1) {
+            const item = items[0]
+            const ItemIcon = item.icon
+            const isActive = activeTab === item.id
+            return <button
+              key={id}
+              type="button"
+              aria-current={isActive ? "page" : undefined}
+              onClick={() => onSelectTab(item.id)}
+              className={`flex shrink-0 items-center gap-1.5 border px-2.5 py-1.5 text-xs focus-visible:outline focus-visible:outline-1 focus-visible:outline-accent ${isActive ? "border-accent/50 bg-accent/10 text-accent font-semibold" : "border-transparent text-muted hover:border-border hover:bg-surface hover:text-primary"}`}
+            >
+              <ItemIcon size={13} />
+              <span>{item.label}</span>
+            </button>
+          }
           return (
             <button
               key={id}
@@ -38,16 +55,16 @@ function MobileAnalysisNav({ activeTab, onSelectTab, isOpen }: { activeTab: TabI
               aria-expanded={isExpanded}
               aria-controls={isExpanded ? `mobile-group-${id}` : undefined}
               onClick={() => setExpandedGroup(current => current === id ? "" : id)}
-              className={`flex shrink-0 items-center gap-1 rounded-md px-2.5 py-1.5 text-xs transition-colors ${isActiveGroup ? "bg-accent/15 text-accent font-semibold" : "text-muted hover:bg-surface hover:text-primary"}`}
+              className={`flex shrink-0 items-center gap-1 border px-2.5 py-1.5 text-xs focus-visible:outline focus-visible:outline-1 focus-visible:outline-accent ${isActiveGroup ? "border-accent/50 bg-accent/10 text-accent font-semibold" : "border-transparent text-muted hover:border-border hover:bg-surface hover:text-primary"}`}
             >
               <Icon size={13} />
               <span>{label}</span>
-              <ChevronDown size={12} className={`transition-transform ${isExpanded ? "rotate-180" : ""}`} />
+              <ChevronDown size={12} className={isExpanded ? "rotate-180" : ""} />
             </button>
           )
         })}
       </div>
-      {NAV_GROUPS.map(({ id, items }) => expandedGroup === id && (
+      {NAV_GROUPS.filter(({ items }) => items.length > 1).map(({ id, items }) => expandedGroup === id && (
         <div id={`mobile-group-${id}`} key={id} className="mt-2 flex flex-wrap gap-1 px-3">
           {items.map(({ id: itemId, label, icon: Icon }) => {
             const isActive = activeTab === itemId
@@ -57,7 +74,7 @@ function MobileAnalysisNav({ activeTab, onSelectTab, isOpen }: { activeTab: TabI
                 type="button"
                 aria-current={isActive ? "page" : undefined}
                 onClick={() => onSelectTab(itemId)}
-                className={`flex shrink-0 items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs transition-colors ${isActive ? "bg-accent/15 text-accent font-semibold" : "text-muted hover:bg-surface hover:text-primary"}`}
+                className={`flex shrink-0 items-center gap-1.5 border px-2.5 py-1.5 text-xs focus-visible:outline focus-visible:outline-1 focus-visible:outline-accent ${isActive ? "border-accent/50 bg-accent/10 text-accent font-semibold" : "border-transparent text-muted hover:border-border hover:bg-surface hover:text-primary"}`}
               >
                 <Icon size={13} />
                 <span>{label}</span>
@@ -78,6 +95,8 @@ export default function DashboardPage({
   const { owner, repo } = params
   const [progress, setProgress] = useState<DashboardProgressState>({ cacheHit: false, phases: { clone: "running" } })
   const [navigationOpen, setNavigationOpen] = useState(true)
+  const [refreshKey, setRefreshKey] = useState(0)
+  const [selectedFile, setSelectedFile] = useState<string | null>(null)
   const toggleNavigation = useCallback(() => setNavigationOpen(open => !open), [])
   const handleProgress = useCallback((message: DashboardStreamMessage) => {
     if (message.type === "cache") {
@@ -89,7 +108,7 @@ export default function DashboardPage({
       }))
     }
   }, [])
-  const { data, isLoading, isError, error, refetch } = useDashboard(owner, repo, handleProgress)
+  const { data, isLoading, isError, error, refetch } = useDashboard(owner, repo, handleProgress, refreshKey)
   const [activeTab, setActiveTab] = useState<TabId>("overview")
   const isViewLoading = isLoading
 
@@ -97,6 +116,11 @@ export default function DashboardPage({
     setProgress({ cacheHit: false, phases: { clone: "running" } })
     void refetch()
   }, [refetch])
+  const refreshDashboard = useCallback(() => {
+    setSelectedFile(null)
+    setProgress({ cacheHit: false, phases: { clone: "running" } })
+    setRefreshKey(key => key + 1)
+  }, [])
 
   useEffect(() => {
     document.body.style.overflow = isViewLoading ? "hidden" : ""
@@ -133,14 +157,15 @@ export default function DashboardPage({
       <div className="flex min-h-screen bg-bg">
         <Sidebar activeTab={activeTab} onSelectTab={setActiveTab} isOpen={navigationOpen} />
         <div className="flex min-w-0 flex-1 flex-col">
-          <RepoHeader owner={owner} repo={repo} navigationOpen={navigationOpen} onToggleNavigation={toggleNavigation} />
+          <RepoHeader owner={owner} repo={repo} navigationOpen={navigationOpen} onToggleNavigation={toggleNavigation} onRefresh={refreshDashboard} />
           <MobileAnalysisNav activeTab={activeTab} onSelectTab={setActiveTab} isOpen={navigationOpen} />
           <main className="mx-auto w-full max-w-7xl flex-1 space-y-6 p-6">
+            <ScanCoverageNotice analysis={data.analysis} health={data.health} />
             <RepoHealthPanel
               data={data.health}
               isError={false}
               error={null}
-              onRetry={() => refetch()}
+              onRetry={refreshDashboard}
               owner={owner}
               repo={repo}
             />
@@ -155,7 +180,7 @@ export default function DashboardPage({
       <div className="flex min-h-screen bg-bg">
         <Sidebar activeTab={activeTab} onSelectTab={setActiveTab} isOpen={navigationOpen} />
         <div className="flex min-w-0 flex-1 flex-col">
-          <RepoHeader owner={owner} repo={repo} navigationOpen={navigationOpen} onToggleNavigation={toggleNavigation} />
+          <RepoHeader owner={owner} repo={repo} navigationOpen={navigationOpen} onToggleNavigation={toggleNavigation} onRefresh={refreshDashboard} />
           <MobileAnalysisNav activeTab={activeTab} onSelectTab={setActiveTab} isOpen={navigationOpen} />
           <main className="mx-auto w-full max-w-7xl flex-1 space-y-6 p-6">
             <ProjectGuide />
@@ -177,21 +202,25 @@ export default function DashboardPage({
           repo={repo}
           navigationOpen={navigationOpen}
           onToggleNavigation={toggleNavigation}
+          onRefresh={refreshDashboard}
           analyzedAt={analysis.analyzedAt}
           totalCommits={analysis.commits.reduce((sum, c) => sum + c.count, 0)}
           totalFiles={analysis.churn.length}
         />
         <MobileAnalysisNav activeTab={activeTab} onSelectTab={setActiveTab} isOpen={navigationOpen} />
         <main className="flex-1 p-6 space-y-6 max-w-7xl w-full mx-auto">
+          <ScanCoverageNotice analysis={analysis} health={data.health} />
+          {selectedFile && <FileEvidencePanel path={selectedFile} analysis={analysis} onClose={() => setSelectedFile(null)} onInspect={setSelectedFile} onSelectTab={setActiveTab} />}
           {/* Active Tab Panel */}
           {activeTab === "overview" && <RepositoryOverview data={data} onSelectTab={setActiveTab} />}
-          {activeTab === "hotspots" && <HotspotChart data={analysis.hotspots} />}
+          {activeTab === "hotspots" && <HotspotChart data={analysis.hotspots} onInspect={setSelectedFile} />}
           {activeTab === "bugfiles" && (
             <BugFilesTable
               data={analysis.bugFiles}
               totalBugFixCommits={totalBugFixCommits}
               owner={owner}
               repo={repo}
+              onInspect={setSelectedFile}
             />
           )}
           {activeTab === "commits" && <CommitActivity data={analysis.commits} />}
@@ -203,13 +232,13 @@ export default function DashboardPage({
               repo={repo}
             />
           )}
-          {activeTab === "churn" && <ChurnTable data={analysis.churn} />}
+          {activeTab === "churn" && <ChurnTable data={analysis.churn} onInspect={setSelectedFile} />}
           {activeTab === "commitlog" && (
             <CommitLog data={analysis.commitLog} owner={owner} repo={repo} />
           )}
-          {activeTab === "ownership" && <OwnershipTable data={analysis.ownership} />}
-          {activeTab === "cochange" && <CoChangeTable data={analysis.cochange} />}
-          {activeTab === "outline" && <OutlineTree data={analysis.outline} />}
+          {activeTab === "ownership" && <OwnershipTable data={analysis.ownership} onInspect={setSelectedFile} />}
+          {activeTab === "cochange" && <CoChangeTable data={analysis.cochange} onInspect={setSelectedFile} />}
+          {activeTab === "outline" && <OutlineTree data={analysis.outline} onInspect={setSelectedFile} />}
         </main>
       </div>
     </div>

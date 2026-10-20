@@ -79,6 +79,19 @@ export interface AnalysisResult {
   outline: Record<string, FileOutline[]>
   commitLog: CommitRecord[]       // full structured commit history
   bugFiles: BugAssociatedFile[]   // files associated with bug-fix commits
+  scan: {
+    commitLimit: number
+    commitsAnalyzed: number
+    historyTruncated: boolean
+    fileLimit: number
+    filesAnalyzed: number
+    filesTruncated: boolean
+    commitFilesTruncated: boolean
+    ownershipTruncated: boolean
+    cochangeTruncated: boolean
+    outlineFileLimit: number
+    outlineTruncated: boolean
+  }
 }
 
 export interface RepositoryOverview {
@@ -105,7 +118,7 @@ export type DashboardStreamMessage =
 
 export interface AnalysisError {
   error: string
-  code: 'REPO_NOT_FOUND' | 'REPO_TOO_LARGE' | 'CLONE_TIMEOUT' | 'INVALID_URL' | 'INTERNAL_ERROR'
+  code: 'REPO_NOT_FOUND' | 'REPO_TOO_LARGE' | 'REPO_SIZE_LIMIT' | 'CLONE_TIMEOUT' | 'SCAN_TIMEOUT' | 'SCAN_ABORTED' | 'INVALID_URL' | 'INTERNAL_ERROR'
 }
 
 export type HealthCategoryId = 'changes' | 'testing' | 'documentation' | 'automation' | 'security' | 'deployment'
@@ -154,6 +167,8 @@ export interface RepoHealthResult {
   historyCommitLimit: number
   historyCommitsAnalyzed: number
   historyTruncated: boolean
+  historyFilesTruncated: boolean
+  filesTruncated: boolean
   secretScan: 'current_revision_only'
   secretScanTruncated: boolean
 }

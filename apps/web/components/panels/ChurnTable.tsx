@@ -4,14 +4,16 @@ import type { FileChurn } from "@wot-git/types";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { FilePath } from "@/components/shared/FilePath";
+import { FileInspectButton } from "@/components/shared/FileInspectButton";
 import { isStale, formatDate } from "@/lib/utils";
 import { Search } from "lucide-react";
 
 interface ChurnTableProps {
   data: FileChurn[];
+  onInspect?: (path: string) => void;
 }
 
-export function ChurnTable({ data }: ChurnTableProps) {
+export function ChurnTable({ data, onInspect }: ChurnTableProps) {
   const [search, setSearch] = useState("");
   const [limit, setLimit] = useState(50);
 
@@ -83,7 +85,7 @@ export function ChurnTable({ data }: ChurnTableProps) {
                         {i + 1}
                       </td>
                       <td className="py-2 px-4">
-                        <FilePath path={f.path} />
+                        <FilePath path={f.path} /><FileInspectButton path={f.path} onInspect={onInspect} />
                       </td>
                       <td className="py-2 px-4 text-right font-mono font-semibold text-primary">
                         {f.churnCount.toLocaleString()}

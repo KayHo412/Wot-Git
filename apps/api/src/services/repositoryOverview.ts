@@ -1,6 +1,6 @@
 import { lstat, readFile } from 'fs/promises'
 import { isAbsolute, relative, resolve } from 'path'
-import { simpleGit } from 'simple-git'
+import { scanGit, throwIfAborted } from '../utils/scan'
 
 export interface RepositoryOverview {
   readmePath: string | null
@@ -48,11 +48,9 @@ function readmeText(markdown: string): { title: string | null; summary: string |
   return { title: title || null, summary }
 }
 
-export async function readRepositoryOverview(repoPath: string): Promise<RepositoryOverview> {
-  const git = simpleGit(repoPath)
-  const paths = (await git.raw(['ls-tree', '-r', '--name-only', 'HEAD']))
-    .split('\n')
-    .filter(Boolean)
+export async function readRepositoryOverview(repoPath: string, signal?: AbortSignal): Promise<RepositoryOverview> {
+  const git = scanGit(repoPath, signal)
+  const paths = (await git.raw(['ls-tree', '-r', '-z', '--name-only', 'HEAD'])).split('\0').filter(Boolean)
   const readmePath = paths.find(path => /^README(?:\.[^/]*)?$/i.test(path.split('/').pop() ?? '')) ?? null
   if (!readmePath) return { readmePath: null, readmeTitle: null, readmeSummary: null, readmeContent: null, readmeImageBaseUrl: null }
 
@@ -67,6 +65,7 @@ export async function readRepositoryOverview(repoPath: string): Promise<Reposito
       return { readmePath, readmeTitle: null, readmeSummary: null, readmeContent: null, readmeImageBaseUrl: null }
     }
     const content = await readFile(fullPath, 'utf8')
+    throwIfAborted(signal)
     const extracted = readmeText(content)
     let readmeImageBaseUrl: string | null = null
     try {

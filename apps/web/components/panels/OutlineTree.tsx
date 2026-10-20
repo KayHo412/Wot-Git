@@ -4,12 +4,14 @@ import type { FileOutline } from "@wot-git/types"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { FileCode, FunctionSquare, Box, Search } from "lucide-react"
+import { FileInspectButton } from "@/components/shared/FileInspectButton"
 
 interface OutlineTreeProps {
   data: Record<string, FileOutline[]>
+  onInspect?: (path: string) => void
 }
 
-export function OutlineTree({ data }: OutlineTreeProps) {
+export function OutlineTree({ data, onInspect }: OutlineTreeProps) {
   const fileKeys = useMemo(() => Object.keys(data).sort(), [data])
   const [selectedFile, setSelectedFile] = useState<string>(fileKeys[0] ?? "")
   const [search, setSearch] = useState("")
@@ -91,10 +93,11 @@ export function OutlineTree({ data }: OutlineTreeProps) {
                 Adjust the filter to show files and their symbols.
               </div>
             ) : <>
-              <div className="text-xs font-mono text-muted mb-3 flex items-center gap-2 border-b border-border/50 pb-2">
+              <div className="text-xs font-mono text-muted mb-3 flex flex-wrap items-center gap-2 border-b border-border/50 pb-2">
                 <span className="text-primary font-semibold break-all">{selectedFile}</span>
                 <span>·</span>
                 <span className="shrink-0">{currentSymbols.length} declarations</span>
+                <FileInspectButton path={selectedFile} onInspect={onInspect} />
               </div>
 
               <div className="flex-1 overflow-y-auto max-h-[300px] space-y-1.5">

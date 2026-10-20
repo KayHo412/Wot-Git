@@ -3,8 +3,10 @@ import { Button } from "@/components/ui/button"
 
 const MESSAGES: Record<string, string> = {
   REPO_NOT_FOUND:  "Repository not found or is private.",
-  REPO_TOO_LARGE:  "This repository exceeds 50,000 commits and cannot be analyzed.",
-  CLONE_TIMEOUT:   "The clone timed out. Try a smaller repository.",
+  REPO_TOO_LARGE:  "This repository exceeds the configured commit limit.",
+  REPO_SIZE_LIMIT: "The repository checkout exceeds the 1 GiB scan limit.",
+  CLONE_TIMEOUT:   "The repository clone exceeded 60 seconds. Try a smaller repository.",
+  SCAN_TIMEOUT:   "Repository analysis exceeded the 3 minute scan limit. Try a smaller repository.",
   INVALID_URL:     "Please enter a valid GitHub repository URL.",
   INTERNAL_ERROR:  "Something went wrong on our end. Please try again.",
 }
