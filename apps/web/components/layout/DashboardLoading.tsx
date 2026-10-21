@@ -31,7 +31,7 @@ export function DashboardLoading({ activeTab, mobileNav, onSelectTab, progress, 
     <div className="flex min-h-screen bg-bg" aria-busy="true">
       <Sidebar activeTab={activeTab} onSelectTab={onSelectTab} isOpen={navigationOpen} />
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 flex h-[57px] items-center justify-between border-b border-border bg-bg px-6">
+        <header className="sticky top-0 z-10 flex h-[57px] items-center justify-between border-b border-border bg-bg px-6">
           <div className="flex items-center gap-2">
             <NavigationToggle isOpen={navigationOpen} onToggle={onToggleNavigation} />
             <div className="flex items-center gap-2">

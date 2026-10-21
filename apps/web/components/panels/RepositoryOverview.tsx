@@ -4,10 +4,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { OverviewBar } from "@/components/panels/OverviewBar"
 import type { TabId } from "@/components/layout/Sidebar"
 import { SafeMarkdown } from "@/components/shared/SafeMarkdown"
+import { InfoTip } from "@/components/shared/InfoTip"
+import type { GuideSectionId } from "@/components/guide/guideTypes"
 
 interface RepositoryOverviewProps {
   data: DashboardResult
   onSelectTab: (tab: TabId) => void
+  onOpenGuide: (section: GuideSectionId) => void
 }
 
 const destinations: Array<{ id: TabId; title: string; description: string }> = [
@@ -17,7 +20,7 @@ const destinations: Array<{ id: TabId; title: string; description: string }> = [
   { id: "health", title: "Repository Health", description: "Review tests, docs, CI, secrets, containers, and trends." },
 ]
 
-export function RepositoryOverview({ data, onSelectTab }: RepositoryOverviewProps) {
+export function RepositoryOverview({ data, onSelectTab, onOpenGuide }: RepositoryOverviewProps) {
   const { overview, analysis, health } = data
   const repositoryName = analysis.repoUrl.split("/").filter(Boolean).slice(-1)[0] ?? "Repository"
   const owner = analysis.repoUrl.split("/").filter(Boolean).slice(-2)[0] ?? ""
@@ -32,15 +35,15 @@ export function RepositoryOverview({ data, onSelectTab }: RepositoryOverviewProp
           <p className="text-xs text-muted">README title: <span className="text-primary">{overview.readmeTitle}</span></p>
         )}
         <p className="text-xs text-muted">
-          Static project-type estimate: <span className="capitalize text-primary">{health.projectType}</span>. Wot-Git reads Git history and recognizable files; it does not run the repository.
+          <span className="inline-flex items-center gap-1">Static project-type estimate <InfoTip term="Project type" description="An estimate based on recognizable repository files and manifests. Wot-Git does not install or run the project to identify its type." guideSection="calculations" onOpenGuide={onOpenGuide} />:</span> <span className="capitalize text-primary">{health.projectType}</span>. Wot-Git reads Git history and recognizable files; it does not run the repository.
         </p>
       </section>
 
-      <OverviewBar data={analysis} />
+      <OverviewBar data={analysis} onOpenGuide={onOpenGuide} />
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
-          <CardHeader className="pb-3"><CardTitle className="flex items-center gap-2 text-sm"><HeartPulse size={15} className="text-accent" /> Health at a glance</CardTitle></CardHeader>
+          <CardHeader className="pb-3"><CardTitle className="flex items-center gap-2 text-sm"><HeartPulse size={15} className="text-accent" /> Health at a glance <InfoTip term="Repository Health score" description="A static checklist score averaged across applicable categories. It does not run tests or certify quality, security, or runtime behavior." guideSection="calculations" onOpenGuide={onOpenGuide} /></CardTitle></CardHeader>
           <CardContent className="flex items-center justify-between gap-4">
             <div>
               <div className="text-3xl font-semibold text-primary">{health.overallScore}<span className="text-base text-muted">/100</span></div>

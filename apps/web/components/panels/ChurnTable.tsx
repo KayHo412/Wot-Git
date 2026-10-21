@@ -7,13 +7,17 @@ import { FilePath } from "@/components/shared/FilePath";
 import { FileInspectButton } from "@/components/shared/FileInspectButton";
 import { isStale, formatDate } from "@/lib/utils";
 import { Search } from "lucide-react";
+import { InfoTip } from "@/components/shared/InfoTip";
+import type { GuideSectionId } from "@/components/guide/guideTypes";
 
 interface ChurnTableProps {
   data: FileChurn[];
   onInspect?: (path: string) => void;
+  selectedFile?: string | null;
+  onOpenGuide: (section: GuideSectionId) => void;
 }
 
-export function ChurnTable({ data, onInspect }: ChurnTableProps) {
+export function ChurnTable({ data, onInspect, selectedFile, onOpenGuide }: ChurnTableProps) {
   const [search, setSearch] = useState("");
   const [limit, setLimit] = useState(50);
 
@@ -30,7 +34,7 @@ export function ChurnTable({ data, onInspect }: ChurnTableProps) {
       <CardHeader>
         <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3">
           <div className="flex flex-col gap-1">
-            <CardTitle>File Churn</CardTitle>
+            <CardTitle className="flex items-center gap-2">File Churn <InfoTip term="File churn" description="The number of analyzed commits that touched a file. It counts commits, not the number of changed lines." guideSection="calculations" onOpenGuide={onOpenGuide} /></CardTitle>
             <p className="text-xs text-muted">
               Most frequently modified files across repository commits
               <br />
@@ -85,7 +89,7 @@ export function ChurnTable({ data, onInspect }: ChurnTableProps) {
                         {i + 1}
                       </td>
                       <td className="py-2 px-4">
-                        <FilePath path={f.path} /><FileInspectButton path={f.path} onInspect={onInspect} />
+                        <FilePath path={f.path} /><FileInspectButton path={f.path} onInspect={onInspect} selectedPath={selectedFile} />
                       </td>
                       <td className="py-2 px-4 text-right font-mono font-semibold text-primary">
                         {f.churnCount.toLocaleString()}

@@ -14,6 +14,8 @@ import { AlertTriangle, CheckCircle2, CircleHelp, ExternalLink, ShieldAlert } fr
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { ErrorState } from "@/components/shared/ErrorState"
+import { InfoTip } from "@/components/shared/InfoTip"
+import type { GuideSectionId } from "@/components/guide/guideTypes"
 
 interface RepoHealthPanelProps {
   data?: RepoHealthResult
@@ -22,6 +24,7 @@ interface RepoHealthPanelProps {
   onRetry: () => void
   owner: string
   repo: string
+  onOpenGuide: (section: GuideSectionId) => void
 }
 
 function statusVariant(category: HealthCategory) {
@@ -60,13 +63,13 @@ function FindingRow({ finding, owner, repo }: { finding: HealthFinding; owner: s
   )
 }
 
-function CategoryRow({ category }: { category: HealthCategory }) {
+function CategoryRow({ category, onOpenGuide }: { category: HealthCategory; onOpenGuide: (section: GuideSectionId) => void }) {
   const scoreText = category.score === null ? "Not applicable" : `${category.score}/100`
   const scoreColor = category.score === null ? "bg-border" : category.score >= 75 ? "bg-success" : category.score >= 50 ? "bg-warning" : "bg-danger"
   return (
     <div className="space-y-2 rounded-md border border-border/60 bg-bg/40 p-3">
       <div className="flex items-center justify-between gap-2">
-        <h3 className="text-sm font-medium text-primary">{category.label}</h3>
+        <h3 className="flex items-center gap-2 text-sm font-medium text-primary">{category.label}<InfoTip term={category.label} description={category.summary} guideSection="calculations" onOpenGuide={onOpenGuide} /></h3>
         <Badge variant={statusVariant(category)}>{scoreText}</Badge>
       </div>
       {category.score !== null && (
@@ -82,7 +85,7 @@ function CategoryRow({ category }: { category: HealthCategory }) {
   )
 }
 
-export function RepoHealthPanel({ data, isError, error, onRetry, owner, repo }: RepoHealthPanelProps) {
+export function RepoHealthPanel({ data, isError, error, onRetry, owner, repo, onOpenGuide }: RepoHealthPanelProps) {
   if (isError || !data) {
     return <ErrorState code={(error as (Error & { code?: string }) | null)?.code} message={error?.message} onRetry={onRetry} />
   }
@@ -95,7 +98,7 @@ export function RepoHealthPanel({ data, isError, error, onRetry, owner, repo }: 
         <CardContent className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <div className="flex flex-wrap items-center gap-2">
-              <h2 className="text-base font-semibold text-primary">Repository health</h2>
+              <h2 className="flex items-center gap-2 text-base font-semibold text-primary">Repository health <InfoTip term="Repository Health score" description="A static checklist score that averages applicable repository signals. It does not run tests or certify quality, security, or runtime behavior." guideSection="calculations" onOpenGuide={onOpenGuide} /></h2>
               <Badge>Project type: {data.projectType}</Badge>
             </div>
             <p className="mt-1 max-w-2xl text-xs leading-5 text-muted">
@@ -113,17 +116,17 @@ export function RepoHealthPanel({ data, isError, error, onRetry, owner, repo }: 
         <div className="flex flex-wrap items-end justify-between gap-2">
           <div>
             <h2 id="health-categories-heading" className="text-sm font-semibold text-primary">Health breakdown</h2>
-            <p className="mt-1 text-xs text-muted">Applicable categories are weighted equally. Not-applicable checks are excluded.</p>
+            <p className="mt-1 flex items-center gap-1 text-xs text-muted">Applicable categories are weighted equally. Not-applicable checks are excluded. <InfoTip term="Applicable categories" description="A category can be excluded when a check does not fit the detected repository type or has no data to evaluate. Excluded categories do not affect the overall average." guideSection="calculations" onOpenGuide={onOpenGuide} /></p>
           </div>
         </div>
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {data.categories.map(category => <CategoryRow key={category.id} category={category} />)}
+          {data.categories.map(category => <CategoryRow key={category.id} category={category} onOpenGuide={onOpenGuide} />)}
         </div>
       </section>
 
       <Card>
         <CardHeader>
-          <CardTitle>Health changes by month</CardTitle>
+          <CardTitle className="flex items-center gap-2">Health changes by month <InfoTip term="Health trend" description="Monthly points are reconstructed from recent Git history and use each month’s last commit tree. Trend coverage is bounded and may be partial." guideSection="calculations" onOpenGuide={onOpenGuide} /></CardTitle>
           <p className="text-xs leading-5 text-muted">Monthly repository state and recent change-risk signals. Past secret values are not scanned or retained.</p>
         </CardHeader>
         <CardContent>

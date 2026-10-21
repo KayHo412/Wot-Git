@@ -7,16 +7,19 @@ import { HashBadge } from "@/components/shared/HashBadge"
 import { BugBadge } from "@/components/shared/BugBadge"
 import { formatDate } from "@/lib/utils"
 import { Search, ChevronLeft, ChevronRight } from "lucide-react"
+import { InfoTip } from "@/components/shared/InfoTip"
+import type { GuideSectionId } from "@/components/guide/guideTypes"
 
 interface CommitLogProps {
   data: CommitRecord[]
   owner: string
   repo: string
+  onOpenGuide: (section: GuideSectionId) => void
 }
 
 const PAGE_SIZE = 50
 
-export function CommitLog({ data, owner, repo }: CommitLogProps) {
+export function CommitLog({ data, owner, repo, onOpenGuide }: CommitLogProps) {
   const [search, setSearch] = useState("")
   const [bugOnly, setBugOnly] = useState(false)
   const [page, setPage] = useState(1)
@@ -43,7 +46,7 @@ export function CommitLog({ data, owner, repo }: CommitLogProps) {
       <CardHeader>
         <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3">
           <div className="flex flex-col gap-1">
-            <CardTitle>Commit Log</CardTitle>
+            <CardTitle className="flex items-center gap-2">Commit Log <InfoTip term="Commit log" description="A bounded list of recent commits with Git author metadata, subject, changed-file count, and the bug-fix keyword classification." guideSection="how-to-read" onOpenGuide={onOpenGuide} /></CardTitle>
             <p className="text-xs text-muted">
               Structured historical commit stream ({filtered.length.toLocaleString()} matches)
             </p>

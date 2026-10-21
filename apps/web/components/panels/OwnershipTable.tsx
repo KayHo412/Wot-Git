@@ -5,14 +5,18 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { FilePath } from "@/components/shared/FilePath"
 import { FileInspectButton } from "@/components/shared/FileInspectButton"
+import { InfoTip } from "@/components/shared/InfoTip"
+import type { GuideSectionId } from "@/components/guide/guideTypes"
 import { Search, AlertTriangle, ShieldCheck } from "lucide-react"
 
 interface OwnershipTableProps {
   data: FileOwnership[]
   onInspect?: (path: string) => void
+  selectedFile?: string | null
+  onOpenGuide: (section: GuideSectionId) => void
 }
 
-export function OwnershipTable({ data, onInspect }: OwnershipTableProps) {
+export function OwnershipTable({ data, onInspect, selectedFile, onOpenGuide }: OwnershipTableProps) {
   const [search, setSearch] = useState("")
   const [busFactorOnly, setBusFactorOnly] = useState(false)
   const [limit, setLimit] = useState(50)
@@ -37,7 +41,7 @@ export function OwnershipTable({ data, onInspect }: OwnershipTableProps) {
       <CardHeader>
         <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3">
           <div className="flex flex-col gap-1">
-            <CardTitle>Code Ownership &amp; Bus Factor</CardTitle>
+            <CardTitle className="flex items-center gap-2">Code Ownership &amp; Bus Factor <InfoTip term="Ownership and single-author flag" description="Contributor counts are based on Git author email addresses in the recent analyzed history. A single-author flag means only one email was observed, not that no one else understands the file." guideSection="calculations" onOpenGuide={onOpenGuide} /></CardTitle>
             <p className="text-xs text-muted">
               Author contribution distribution and single-author risk identification
             </p>
@@ -96,7 +100,7 @@ export function OwnershipTable({ data, onInspect }: OwnershipTableProps) {
                   >
                     <td className="py-2 px-4 text-center font-mono text-muted/60">{i + 1}</td>
                     <td className="py-2 px-4">
-                      <FilePath path={f.path} /><FileInspectButton path={f.path} onInspect={onInspect} />
+                      <FilePath path={f.path} /><FileInspectButton path={f.path} onInspect={onInspect} selectedPath={selectedFile} />
                     </td>
                     <td className="py-2 px-4 text-center font-mono text-muted">
                       {f.authors.length}

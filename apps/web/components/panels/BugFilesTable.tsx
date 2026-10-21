@@ -7,6 +7,8 @@ import { FilePath } from "@/components/shared/FilePath"
 import { FileInspectButton } from "@/components/shared/FileInspectButton"
 import { HashBadge } from "@/components/shared/HashBadge"
 import { Search } from "lucide-react"
+import { InfoTip } from "@/components/shared/InfoTip"
+import type { GuideSectionId } from "@/components/guide/guideTypes"
 
 interface BugFilesTableProps {
   data: BugAssociatedFile[]
@@ -14,9 +16,11 @@ interface BugFilesTableProps {
   owner: string
   repo: string
   onInspect?: (path: string) => void
+  selectedFile?: string | null
+  onOpenGuide: (section: GuideSectionId) => void
 }
 
-export function BugFilesTable({ data, totalBugFixCommits, owner, repo, onInspect }: BugFilesTableProps) {
+export function BugFilesTable({ data, totalBugFixCommits, owner, repo, onInspect, selectedFile, onOpenGuide }: BugFilesTableProps) {
   const [search, setSearch] = useState("")
   const [limit, setLimit] = useState(50)
 
@@ -31,7 +35,7 @@ export function BugFilesTable({ data, totalBugFixCommits, owner, repo, onInspect
       <CardHeader>
         <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3">
           <div className="flex flex-col gap-1">
-            <CardTitle>Bug-Associated Files</CardTitle>
+            <CardTitle className="flex items-center gap-2">Bug-Associated Files <InfoTip term="Bug-associated file" description="A file appeared in a commit whose subject matched the bug-fix keyword heuristic. This is historical association, not confirmation that the file contains a bug." guideSection="how-to-read" onOpenGuide={onOpenGuide} /></CardTitle>
             <p className="text-xs text-muted">
               Files modified in commits whose messages indicate defect resolution ({totalBugFixCommits.toLocaleString()} bug-fix commits total)
             </p>
@@ -73,7 +77,7 @@ export function BugFilesTable({ data, totalBugFixCommits, owner, repo, onInspect
                     <tr key={f.path} className="hover:bg-surface/60 transition-colors">
                       <td className="py-2 px-4 text-center font-mono text-muted/60">{i + 1}</td>
                       <td className="py-2 px-4">
-                        <FilePath path={f.path} /><FileInspectButton path={f.path} onInspect={onInspect} />
+                        <FilePath path={f.path} /><FileInspectButton path={f.path} onInspect={onInspect} selectedPath={selectedFile} />
                       </td>
                       <td className="py-2 px-4 text-right font-mono font-bold text-danger">
                         {f.bugFixCount.toLocaleString()}

@@ -5,13 +5,17 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { FileCode, FunctionSquare, Box, Search } from "lucide-react"
 import { FileInspectButton } from "@/components/shared/FileInspectButton"
+import { InfoTip } from "@/components/shared/InfoTip"
+import type { GuideSectionId } from "@/components/guide/guideTypes"
 
 interface OutlineTreeProps {
   data: Record<string, FileOutline[]>
   onInspect?: (path: string) => void
+  selectedFile?: string | null
+  onOpenGuide: (section: GuideSectionId) => void
 }
 
-export function OutlineTree({ data, onInspect }: OutlineTreeProps) {
+export function OutlineTree({ data, onInspect, selectedFile: inspectedFile, onOpenGuide }: OutlineTreeProps) {
   const fileKeys = useMemo(() => Object.keys(data).sort(), [data])
   const [selectedFile, setSelectedFile] = useState<string>(fileKeys[0] ?? "")
   const [search, setSearch] = useState("")
@@ -33,7 +37,7 @@ export function OutlineTree({ data, onInspect }: OutlineTreeProps) {
     return (
       <Card id="outline">
         <CardHeader>
-          <CardTitle>Code Symbol Outline</CardTitle>
+          <CardTitle className="flex items-center gap-2">Code Symbol Outline <InfoTip term="Code outline" description="A regex-based list of selected function and class declarations from supported source files, not a complete language parser." guideSection="calculations" onOpenGuide={onOpenGuide} /></CardTitle>
           <p className="text-xs text-muted">No supported source code outline extracted</p>
         </CardHeader>
       </Card>
@@ -43,7 +47,7 @@ export function OutlineTree({ data, onInspect }: OutlineTreeProps) {
   return (
     <Card id="outline">
       <CardHeader>
-        <CardTitle>Code Symbol Outline</CardTitle>
+        <CardTitle className="flex items-center gap-2">Code Symbol Outline <InfoTip term="Code outline" description="A regex-based list of selected function and class declarations from supported source files, not a complete language parser." guideSection="calculations" onOpenGuide={onOpenGuide} /></CardTitle>
         <p className="text-xs text-muted">
           Extracted function and class declarations across parsed source files ({fileKeys.length} files)
         </p>
@@ -97,7 +101,7 @@ export function OutlineTree({ data, onInspect }: OutlineTreeProps) {
                 <span className="text-primary font-semibold break-all">{selectedFile}</span>
                 <span>·</span>
                 <span className="shrink-0">{currentSymbols.length} declarations</span>
-                <FileInspectButton path={selectedFile} onInspect={onInspect} />
+                <FileInspectButton path={selectedFile} onInspect={onInspect} selectedPath={inspectedFile} />
               </div>
 
               <div className="flex-1 overflow-y-auto max-h-[300px] space-y-1.5">

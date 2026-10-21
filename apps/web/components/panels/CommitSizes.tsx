@@ -14,12 +14,15 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { HashBadge } from "@/components/shared/HashBadge"
 import { formatDate } from "@/lib/utils"
 import { Scale, Zap, FileDiff, AlertCircle } from "lucide-react"
+import { InfoTip } from "@/components/shared/InfoTip"
+import type { GuideSectionId } from "@/components/guide/guideTypes"
 
 interface CommitSizesProps {
   data: CommitSize[]
   commitLog?: CommitRecord[]
   owner?: string
   repo?: string
+  onOpenGuide: (section: GuideSectionId) => void
 }
 
 interface Bucket {
@@ -31,7 +34,7 @@ interface Bucket {
   color: string
 }
 
-export function CommitSizes({ data, commitLog = [], owner, repo }: CommitSizesProps) {
+export function CommitSizes({ data, commitLog = [], owner, repo, onOpenGuide }: CommitSizesProps) {
   const [mounted, setMounted] = useState(false)
   useEffect(() => setMounted(true), [])
 
@@ -166,7 +169,7 @@ export function CommitSizes({ data, commitLog = [], owner, repo }: CommitSizesPr
               <Zap size={16} />
             </div>
             <div>
-              <div className="text-xs text-muted">Atomic Ratio (&le;50 lines)</div>
+              <div className="flex items-center gap-1 text-xs text-muted">Atomic Ratio (&le;50 lines) <InfoTip term="Atomic ratio" description="The percentage of analyzed commits with at most 50 inserted plus deleted lines. It describes commit size, not a measured reduction in defects." guideSection="calculations" onOpenGuide={onOpenGuide} /></div>
               <div className="text-lg font-bold font-mono text-primary">
                 {atomicRatio}%
               </div>
@@ -180,7 +183,7 @@ export function CommitSizes({ data, commitLog = [], owner, repo }: CommitSizesPr
               <Scale size={16} />
             </div>
             <div>
-              <div className="text-xs text-muted">Median Commit Size</div>
+              <div className="flex items-center gap-1 text-xs text-muted">Median Commit Size <InfoTip term="Median commit size" description="The middle inserted-plus-deleted line count after sorting commit sizes. With an even number of commits, the middle two values are averaged and rounded." guideSection="calculations" onOpenGuide={onOpenGuide} /></div>
               <div className="text-lg font-bold font-mono text-primary">
                 {medianSize.toLocaleString()}{" "}
                 <span className="text-xs font-normal text-muted">lines</span>
@@ -195,7 +198,7 @@ export function CommitSizes({ data, commitLog = [], owner, repo }: CommitSizesPr
               <FileDiff size={16} />
             </div>
             <div>
-              <div className="text-xs text-muted">Total Code Churn</div>
+              <div className="flex items-center gap-1 text-xs text-muted">Total Code Churn <InfoTip term="Total code churn" description="The sum of inserted and deleted lines across analyzed commits. It is a volume measure, not a measure of code quality." guideSection="calculations" onOpenGuide={onOpenGuide} /></div>
               <div className="text-lg font-bold font-mono text-primary">
                 {totalLines.toLocaleString()}{" "}
                 <span className="text-xs font-normal text-muted">lines</span>
@@ -210,9 +213,9 @@ export function CommitSizes({ data, commitLog = [], owner, repo }: CommitSizesPr
         <CardHeader>
           <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3">
             <div className="flex flex-col gap-1">
-              <CardTitle>Commit Size Distribution</CardTitle>
+              <CardTitle className="flex items-center gap-2">Commit Size Distribution <InfoTip term="Commit size buckets" description="Commits are grouped by the sum of inserted and deleted lines. Bucket boundaries are listed in the Calculations guide." guideSection="calculations" onOpenGuide={onOpenGuide} /></CardTitle>
               <p className="text-xs text-muted">
-                Granularity breakdown across all {data.length.toLocaleString()} commits. Small/atomic commits (&le;50 lines) minimize bug risk.
+                Granularity breakdown across all {data.length.toLocaleString()} commits. Small/atomic commits (&le;50 lines) describe change size; they do not establish lower defect risk.
               </p>
             </div>
           </div>

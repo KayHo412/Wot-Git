@@ -3,12 +3,15 @@ import { useState, useEffect } from "react"
 import type { CommitFrequency } from "@wot-git/types"
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, Brush } from "recharts"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
+import { InfoTip } from "@/components/shared/InfoTip"
+import type { GuideSectionId } from "@/components/guide/guideTypes"
 
 interface CommitActivityProps {
   data: CommitFrequency[]
+  onOpenGuide: (section: GuideSectionId) => void
 }
 
-export function CommitActivity({ data }: CommitActivityProps) {
+export function CommitActivity({ data, onOpenGuide }: CommitActivityProps) {
   const [mounted, setMounted] = useState(false)
   useEffect(() => setMounted(true), [])
 
@@ -17,7 +20,7 @@ export function CommitActivity({ data }: CommitActivityProps) {
   return (
     <Card id="commits">
       <CardHeader>
-        <CardTitle>Commit Activity</CardTitle>
+        <CardTitle className="flex items-center gap-2">Commit Activity <InfoTip term="Commit activity" description="Daily counts of commits in the analyzed history window, grouped by Git author date." guideSection="calculations" onOpenGuide={onOpenGuide} /></CardTitle>
         <p className="text-xs text-muted">Daily commit frequency across the repository history</p>
       </CardHeader>
       <CardContent>

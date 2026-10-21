@@ -12,10 +12,14 @@ import {
 } from "recharts";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { FileInspectButton } from "@/components/shared/FileInspectButton";
+import { InfoTip } from "@/components/shared/InfoTip";
+import type { GuideSectionId } from "@/components/guide/guideTypes";
 
 interface HotspotChartProps {
   data: Hotspot[];
   onInspect?: (path: string) => void;
+  selectedFile?: string | null;
+  onOpenGuide: (section: GuideSectionId) => void;
 }
 
 function getPointColor(score: number): string {
@@ -24,7 +28,7 @@ function getPointColor(score: number): string {
   return "#3fb950"; // safe green
 }
 
-export function HotspotChart({ data, onInspect }: HotspotChartProps) {
+export function HotspotChart({ data, onInspect, selectedFile, onOpenGuide }: HotspotChartProps) {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => setMounted(true), []);
@@ -44,7 +48,7 @@ export function HotspotChart({ data, onInspect }: HotspotChartProps) {
       <CardHeader>
         <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3">
           <div className="flex flex-col gap-1">
-            <CardTitle>Hotspot Map</CardTitle>
+            <CardTitle className="flex items-center gap-2">Hotspot Map <InfoTip term="Hotspot score" description="A repository-relative average of normalized file-change frequency and current file size. It highlights files to investigate; it does not diagnose defects." guideSection="calculations" onOpenGuide={onOpenGuide} /></CardTitle>
             <p className="text-xs text-muted">
               Relative file size vs change frequency. Points in the top-right have the highest relative hotspot scores in this repository.
             </p>
@@ -166,7 +170,7 @@ export function HotspotChart({ data, onInspect }: HotspotChartProps) {
           <ul className="mt-1 divide-y divide-border/60 sm:grid sm:grid-cols-2 sm:gap-x-6">
             {data.slice(0, 5).map(file => <li key={file.path} className="flex items-center justify-between gap-3 py-2 text-xs">
               <span className="min-w-0 truncate font-mono text-primary" title={file.path}>{file.path}</span>
-              <span className="shrink-0 font-mono text-muted">{file.hotspotScore.toFixed(4)}<FileInspectButton path={file.path} onInspect={onInspect} /></span>
+              <span className="shrink-0 font-mono text-muted">{file.hotspotScore.toFixed(4)}<FileInspectButton path={file.path} onInspect={onInspect} selectedPath={selectedFile} /></span>
             </li>)}
           </ul>
         </div>}

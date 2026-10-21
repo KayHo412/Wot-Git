@@ -1,5 +1,5 @@
 "use client"
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import type { DashboardStreamMessage } from "@wot-git/types"
 import { useDashboard } from "@/hooks/useDashboard"
 import { Sidebar, NAV_GROUPS, groupForTab, type TabId } from "@/components/layout/Sidebar"
@@ -21,16 +21,22 @@ import { ChevronDown } from "lucide-react"
 import { ProjectGuide } from "@/components/guide/ProjectGuide"
 import { FileEvidencePanel } from "@/components/panels/FileEvidencePanel"
 import { ScanCoverageNotice } from "@/components/panels/ScanCoverageNotice"
+import type { GuideSectionId } from "@/components/guide/guideTypes"
 
 function MobileAnalysisNav({ activeTab, onSelectTab, isOpen }: { activeTab: TabId; onSelectTab: (tab: TabId) => void; isOpen: boolean }) {
   const [expandedGroup, setExpandedGroup] = useState(() => groupForTab(activeTab))
+  const activeTopLevelRef = useRef<HTMLButtonElement>(null)
 
   useEffect(() => setExpandedGroup(groupForTab(activeTab)), [activeTab])
+  useEffect(() => {
+    activeTopLevelRef.current?.scrollIntoView({ block: "nearest", inline: "nearest", behavior: "auto" })
+  }, [activeTab])
 
   return (
     <nav id="mobile-analysis-nav" aria-label="Analysis sections" hidden={!isOpen} className="sticky top-[57px] z-10 border-b border-border bg-bg py-2 lg:hidden">
-      <div className="flex flex-wrap gap-1 px-3">
-        {NAV_GROUPS.map(({ id, label, icon: Icon, items }) => {
+      <div className="w-full min-w-0 overflow-x-auto overscroll-x-contain">
+        <div className="flex w-max min-w-full flex-nowrap gap-1 px-3">
+          {NAV_GROUPS.map(({ id, label, icon: Icon, items }) => {
           const isActiveGroup = items.some(item => item.id === activeTab)
           const isExpanded = expandedGroup === id
           if (items.length === 1) {
@@ -39,6 +45,7 @@ function MobileAnalysisNav({ activeTab, onSelectTab, isOpen }: { activeTab: TabI
             const isActive = activeTab === item.id
             return <button
               key={id}
+              ref={isActiveGroup ? activeTopLevelRef : undefined}
               type="button"
               aria-current={isActive ? "page" : undefined}
               onClick={() => onSelectTab(item.id)}
@@ -51,6 +58,7 @@ function MobileAnalysisNav({ activeTab, onSelectTab, isOpen }: { activeTab: TabI
           return (
             <button
               key={id}
+              ref={isActiveGroup ? activeTopLevelRef : undefined}
               type="button"
               aria-expanded={isExpanded}
               aria-controls={isExpanded ? `mobile-group-${id}` : undefined}
@@ -62,7 +70,8 @@ function MobileAnalysisNav({ activeTab, onSelectTab, isOpen }: { activeTab: TabI
               <ChevronDown size={12} className={isExpanded ? "rotate-180" : ""} />
             </button>
           )
-        })}
+          })}
+        </div>
       </div>
       {NAV_GROUPS.filter(({ items }) => items.length > 1).map(({ id, items }) => expandedGroup === id && (
         <div id={`mobile-group-${id}`} key={id} className="mt-2 flex flex-wrap gap-1 px-3">
@@ -97,6 +106,7 @@ export default function DashboardPage({
   const [navigationOpen, setNavigationOpen] = useState(true)
   const [refreshKey, setRefreshKey] = useState(0)
   const [selectedFile, setSelectedFile] = useState<string | null>(null)
+  const [guideSection, setGuideSection] = useState<GuideSectionId>("how-to-read")
   const toggleNavigation = useCallback(() => setNavigationOpen(open => !open), [])
   const handleProgress = useCallback((message: DashboardStreamMessage) => {
     if (message.type === "cache") {
@@ -112,23 +122,25 @@ export default function DashboardPage({
   const [activeTab, setActiveTab] = useState<TabId>("overview")
   const isViewLoading = isLoading
 
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" })
+  }, [activeTab])
+
   const retryDashboard = useCallback(() => {
+    window.scrollTo(0, 0)
     setProgress({ cacheHit: false, phases: { clone: "running" } })
     void refetch()
   }, [refetch])
   const refreshDashboard = useCallback(() => {
+    window.scrollTo(0, 0)
     setSelectedFile(null)
     setProgress({ cacheHit: false, phases: { clone: "running" } })
     setRefreshKey(key => key + 1)
   }, [])
-
-  useEffect(() => {
-    document.body.style.overflow = isViewLoading ? "hidden" : ""
-
-    return () => {
-      document.body.style.overflow = ""
-    }
-  }, [isViewLoading])
+  const openGuide = useCallback((section: GuideSectionId) => {
+    setGuideSection(section)
+    setActiveTab("guide")
+  }, [])
 
   if (isViewLoading) {
     return (
@@ -160,7 +172,7 @@ export default function DashboardPage({
           <RepoHeader owner={owner} repo={repo} navigationOpen={navigationOpen} onToggleNavigation={toggleNavigation} onRefresh={refreshDashboard} />
           <MobileAnalysisNav activeTab={activeTab} onSelectTab={setActiveTab} isOpen={navigationOpen} />
           <main className="mx-auto w-full max-w-7xl flex-1 space-y-6 p-6">
-            <ScanCoverageNotice analysis={data.analysis} health={data.health} />
+            <ScanCoverageNotice analysis={data.analysis} health={data.health} onOpenGuide={openGuide} />
             <RepoHealthPanel
               data={data.health}
               isError={false}
@@ -168,6 +180,7 @@ export default function DashboardPage({
               onRetry={refreshDashboard}
               owner={owner}
               repo={repo}
+              onOpenGuide={openGuide}
             />
           </main>
         </div>
@@ -183,7 +196,7 @@ export default function DashboardPage({
           <RepoHeader owner={owner} repo={repo} navigationOpen={navigationOpen} onToggleNavigation={toggleNavigation} onRefresh={refreshDashboard} />
           <MobileAnalysisNav activeTab={activeTab} onSelectTab={setActiveTab} isOpen={navigationOpen} />
           <main className="mx-auto w-full max-w-7xl flex-1 space-y-6 p-6">
-            <ProjectGuide />
+            <ProjectGuide initialSection={guideSection} onSectionChange={setGuideSection} />
           </main>
         </div>
       </div>
@@ -209,11 +222,11 @@ export default function DashboardPage({
         />
         <MobileAnalysisNav activeTab={activeTab} onSelectTab={setActiveTab} isOpen={navigationOpen} />
         <main className="flex-1 p-6 space-y-6 max-w-7xl w-full mx-auto">
-          <ScanCoverageNotice analysis={analysis} health={data.health} />
-          {selectedFile && <FileEvidencePanel path={selectedFile} analysis={analysis} onClose={() => setSelectedFile(null)} onInspect={setSelectedFile} onSelectTab={setActiveTab} />}
+          <ScanCoverageNotice analysis={analysis} health={data.health} onOpenGuide={openGuide} />
+          {selectedFile && <FileEvidencePanel path={selectedFile} analysis={analysis} onClose={() => setSelectedFile(null)} onInspect={setSelectedFile} onSelectTab={setActiveTab} onOpenGuide={openGuide} />}
           {/* Active Tab Panel */}
-          {activeTab === "overview" && <RepositoryOverview data={data} onSelectTab={setActiveTab} />}
-          {activeTab === "hotspots" && <HotspotChart data={analysis.hotspots} onInspect={setSelectedFile} />}
+          {activeTab === "overview" && <RepositoryOverview data={data} onSelectTab={setActiveTab} onOpenGuide={openGuide} />}
+          {activeTab === "hotspots" && <HotspotChart data={analysis.hotspots} onInspect={setSelectedFile} selectedFile={selectedFile} onOpenGuide={openGuide} />}
           {activeTab === "bugfiles" && (
             <BugFilesTable
               data={analysis.bugFiles}
@@ -221,24 +234,27 @@ export default function DashboardPage({
               owner={owner}
               repo={repo}
               onInspect={setSelectedFile}
+              selectedFile={selectedFile}
+              onOpenGuide={openGuide}
             />
           )}
-          {activeTab === "commits" && <CommitActivity data={analysis.commits} />}
+          {activeTab === "commits" && <CommitActivity data={analysis.commits} onOpenGuide={openGuide} />}
           {activeTab === "commitsizes" && (
             <CommitSizes
               data={analysis.commitSizes}
               commitLog={analysis.commitLog}
               owner={owner}
               repo={repo}
+              onOpenGuide={openGuide}
             />
           )}
-          {activeTab === "churn" && <ChurnTable data={analysis.churn} onInspect={setSelectedFile} />}
+          {activeTab === "churn" && <ChurnTable data={analysis.churn} onInspect={setSelectedFile} selectedFile={selectedFile} onOpenGuide={openGuide} />}
           {activeTab === "commitlog" && (
-            <CommitLog data={analysis.commitLog} owner={owner} repo={repo} />
+            <CommitLog data={analysis.commitLog} owner={owner} repo={repo} onOpenGuide={openGuide} />
           )}
-          {activeTab === "ownership" && <OwnershipTable data={analysis.ownership} onInspect={setSelectedFile} />}
-          {activeTab === "cochange" && <CoChangeTable data={analysis.cochange} onInspect={setSelectedFile} />}
-          {activeTab === "outline" && <OutlineTree data={analysis.outline} onInspect={setSelectedFile} />}
+          {activeTab === "ownership" && <OwnershipTable data={analysis.ownership} onInspect={setSelectedFile} selectedFile={selectedFile} onOpenGuide={openGuide} />}
+          {activeTab === "cochange" && <CoChangeTable data={analysis.cochange} onInspect={setSelectedFile} selectedFile={selectedFile} onOpenGuide={openGuide} />}
+          {activeTab === "outline" && <OutlineTree data={analysis.outline} onInspect={setSelectedFile} selectedFile={selectedFile} onOpenGuide={openGuide} />}
         </main>
       </div>
     </div>

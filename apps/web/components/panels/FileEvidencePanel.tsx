@@ -1,9 +1,12 @@
 "use client"
 import type { AnalysisResult } from "@wot-git/types"
 import { X } from "lucide-react"
+import { useEffect, useRef, useState } from "react"
 import type { TabId } from "@/components/layout/Sidebar"
 import { formatDate } from "@/lib/utils"
 import { FilePath } from "@/components/shared/FilePath"
+import { InfoTip } from "@/components/shared/InfoTip"
+import type { GuideSectionId } from "@/components/guide/guideTypes"
 
 interface FileEvidencePanelProps {
   path: string
@@ -11,9 +14,52 @@ interface FileEvidencePanelProps {
   onClose: () => void
   onInspect: (path: string) => void
   onSelectTab: (tab: TabId) => void
+  onOpenGuide: (section: GuideSectionId) => void
 }
 
-export function FileEvidencePanel({ path, analysis, onClose, onInspect, onSelectTab }: FileEvidencePanelProps) {
+export function FileEvidencePanel({ path, analysis, onClose, onInspect, onSelectTab, onOpenGuide }: FileEvidencePanelProps) {
+  const panelRef = useRef<HTMLElement>(null)
+  const previousPath = useRef<string | null>(null)
+  const [announcement, setAnnouncement] = useState("")
+
+  useEffect(() => {
+    const switched = previousPath.current !== null && previousPath.current !== path
+    setAnnouncement(switched ? `Inspection switched to ${path}` : `Now inspecting ${path}`)
+    previousPath.current = path
+
+    const alignPanelBelowNavigation = () => {
+      const panel = panelRef.current
+      if (!panel) return
+
+      const header = document.querySelector<HTMLElement>("header.sticky")
+      const mobileNav = document.getElementById("mobile-analysis-nav")
+      const stickyBottom = Math.max(
+        header?.getBoundingClientRect().bottom ?? 0,
+        mobileNav?.getClientRects().length ? mobileNav.getBoundingClientRect().bottom : 0,
+      )
+      const panelTop = panel.getBoundingClientRect().top
+      const visible = panelTop < window.innerHeight && panel.getBoundingClientRect().bottom > 0
+      const targetTop = stickyBottom + 16
+      if (visible && Math.abs(panelTop - targetTop) > 1) {
+        window.scrollBy(0, panelTop - targetTop)
+      }
+    }
+
+    panelRef.current?.scrollIntoView({ block: "start", behavior: "auto" })
+    const frame = window.requestAnimationFrame(alignPanelBelowNavigation)
+
+    const resizeObserver = new ResizeObserver(alignPanelBelowNavigation)
+    const header = document.querySelector<HTMLElement>("header.sticky")
+    const mobileNav = document.getElementById("mobile-analysis-nav")
+    if (header) resizeObserver.observe(header)
+    if (mobileNav) resizeObserver.observe(mobileNav)
+
+    return () => {
+      window.cancelAnimationFrame(frame)
+      resizeObserver.disconnect()
+    }
+  }, [path])
+
   const churn = analysis.churn.find(item => item.path === path)
   const hotspot = analysis.hotspots.find(item => item.path === path)
   const ownership = analysis.ownership.find(item => item.path === path)
@@ -24,11 +70,13 @@ export function FileEvidencePanel({ path, analysis, onClose, onInspect, onSelect
     .slice(0, 5)
 
   return (
-    <section aria-labelledby="file-evidence-title" className="border border-border bg-surface/40">
+    <section ref={panelRef} aria-labelledby="file-evidence-title" className="border-l-2 border-l-accent border-y border-r border-border bg-surface/40">
       <header className="flex items-start justify-between gap-4 border-b border-border px-4 py-3">
         <div className="min-w-0">
-          <h2 id="file-evidence-title" className="text-sm font-semibold text-primary">File evidence</h2>
-          <div className="mt-1 break-all"><FilePath path={path} maxLength={180} /></div>
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-accent">File inspection</p>
+          <h2 id="file-evidence-title" className="mt-1 flex items-center gap-2 text-sm font-semibold text-primary">Currently inspecting <InfoTip term="File evidence" description="A combined view of this file’s available Git-history signals. Missing items mean the signal was not present in the returned analysis; they do not imply that no activity ever occurred." guideSection="how-to-read" onOpenGuide={onOpenGuide} /></h2>
+          <div className="mt-1 break-all text-sm"><FilePath path={path} maxLength={180} /></div>
+          <p role="status" aria-live="polite" aria-atomic="true" className="mt-2 text-xs font-medium text-accent">{announcement}</p>
           <p className="mt-2 text-xs text-muted">Observed Git-history signals for investigation. These are not a bug verdict or a recommendation to change the file.</p>
         </div>
         <button type="button" onClick={onClose} aria-label="Close file evidence" className="shrink-0 p-1 text-muted hover:text-primary focus-visible:outline focus-visible:outline-1 focus-visible:outline-accent">

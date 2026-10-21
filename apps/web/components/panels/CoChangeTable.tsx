@@ -5,11 +5,15 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { FilePath } from "@/components/shared/FilePath"
 import { FileInspectButton } from "@/components/shared/FileInspectButton"
+import { InfoTip } from "@/components/shared/InfoTip"
+import type { GuideSectionId } from "@/components/guide/guideTypes"
 import { Search, Link2 } from "lucide-react"
 
 interface CoChangeTableProps {
   data: CoChange[]
   onInspect?: (path: string) => void
+  selectedFile?: string | null
+  onOpenGuide: (section: GuideSectionId) => void
 }
 
 const EXCLUDED_EXTENSIONS = new Set([
@@ -38,7 +42,7 @@ function isExcludedFile(path: string): boolean {
   return false
 }
 
-export function CoChangeTable({ data, onInspect }: CoChangeTableProps) {
+export function CoChangeTable({ data, onInspect, selectedFile, onOpenGuide }: CoChangeTableProps) {
   const [search, setSearch] = useState("")
   const [limit, setLimit] = useState(50)
 
@@ -62,7 +66,7 @@ export function CoChangeTable({ data, onInspect }: CoChangeTableProps) {
       <CardHeader>
         <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3">
           <div className="flex flex-col gap-1">
-            <CardTitle>Temporal File Coupling (Co-Change)</CardTitle>
+            <CardTitle className="flex items-center gap-2">Temporal File Coupling (Co-Change) <InfoTip term="Co-change" description="Counts how often a pair of files appears together in analyzed commits. Repeated co-change is correlation, not proof of a dependency." guideSection="calculations" onOpenGuide={onOpenGuide} /></CardTitle>
             <p className="text-xs text-muted">
               Pairs of files that consistently change together in the same commits
             </p>
@@ -104,13 +108,13 @@ export function CoChangeTable({ data, onInspect }: CoChangeTableProps) {
                     <tr key={`${pair.fileA}-${pair.fileB}`} className="hover:bg-surface/60 transition-colors">
                       <td className="py-2 px-4 text-center font-mono text-muted/60">{i + 1}</td>
                       <td className="py-2 px-4">
-                        <FilePath path={pair.fileA} /><FileInspectButton path={pair.fileA} onInspect={onInspect} />
+                        <FilePath path={pair.fileA} /><FileInspectButton path={pair.fileA} onInspect={onInspect} selectedPath={selectedFile} />
                       </td>
                       <td className="py-2 px-4 text-center text-muted/40">
                         <Link2 size={12} />
                       </td>
                       <td className="py-2 px-4">
-                        <FilePath path={pair.fileB} /><FileInspectButton path={pair.fileB} onInspect={onInspect} />
+                        <FilePath path={pair.fileB} /><FileInspectButton path={pair.fileB} onInspect={onInspect} selectedPath={selectedFile} />
                       </td>
                       <td className="py-2 px-4">
                         <div className="flex items-center justify-end gap-2">
