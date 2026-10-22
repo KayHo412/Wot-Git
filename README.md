@@ -63,8 +63,8 @@ The combined dashboard uses one clone for its analysis, Health report, and READM
 
 ### Requirements
 
-- Node.js; a supported version range is not currently declared in the project manifest
-- pnpm 11.x
+- Node.js 22.13 or newer in the Node.js 22 line
+- pnpm 11.27.1 (Corepack can activate the version pinned in `package.json`)
 - Git available on `PATH`
 
 ### Start both apps
@@ -86,12 +86,39 @@ pnpm dev:web
 pnpm dev:api
 ```
 
+### Run with Docker Compose
+
+Requirements: Docker Engine and the Docker Compose plugin.
+
+Build and start the production-style web and API containers:
+
+```bash
+docker compose up --build
+```
+
+Open the web app at `http://localhost:3000`. The API is available at `http://localhost:3001`; check it with `http://localhost:3001/health`. The API container includes Git to clone public repositories, and scan checkouts are temporary inside the container.
+
+Stop the containers with `Ctrl+C`, or run `docker compose down` from another terminal. To use a different API address, set `NEXT_PUBLIC_API_URL` to a URL reachable by the user's browser and rebuild the web image:
+
+```bash
+NEXT_PUBLIC_API_URL=https://api.example.com docker compose up --build
+```
+
+`NEXT_PUBLIC_API_URL` is compiled into the web app at image build time. The default is suitable for local use; a Compose-only hostname such as `http://api:3001` is not reachable by a browser outside the Compose network.
+
 ### Build and verify
 
 ```bash
 pnpm build
 pnpm --filter @wot-git/api test
 pnpm --filter @wot-git/api benchmark
+```
+
+GitHub Actions runs these checks for pull requests and pushes to `main`, then builds both Docker images. It validates changes only; it does not publish images or deploy the application. To build the images locally without starting them:
+
+```bash
+docker build -f Dockerfile.api -t wot-git-api .
+docker build -f Dockerfile.web --build-arg NEXT_PUBLIC_API_URL=http://localhost:3001 -t wot-git-web .
 ```
 
 The offline benchmark uses a small manually labeled fixture. Its numbers describe that fixture only; they are not general accuracy claims.

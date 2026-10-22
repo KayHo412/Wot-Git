@@ -1,6 +1,10 @@
 {
   "name": "wot-git",
   "private": true,
+  "packageManager": "pnpm@11.27.1",
+  "engines": {
+    "node": ">=22.13 <23"
+  },
   "scripts": {
     "dev": "pnpm --parallel --filter @wot-git/api --filter @wot-git/web dev",
     "dev:api": "pnpm --filter @wot-git/api dev",
