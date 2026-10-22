@@ -22,7 +22,7 @@
 - [CODE] Metrics are bounded and some are explicitly marked partial; a timeout or checkout-size limit can instead reject the scan. See `apps/api/src/config/limits.ts`, `apps/api/src/utils/git.ts`, and the `scan` metadata in `packages/types/index.ts`.
 - [CODE] The current test suite exercises service calculations, parsers, static Health behavior, cancellation, and client-side exploration helpers. It does not test the Express routers over HTTP or automate browser interactions. See Section 9.
 - [CODE] At inspection, the API tests and web production build passed (25 tests; build successful). The fixture benchmark ran successfully. These results are recorded in Section 9.
-- [DOC] At the time of the source inventory for this handoff, no root README or formal product requirements document was present. A root README and two SVG illustrations were added afterward in the same work session; `APIcmd.md` remains and includes claims that no longer match parts of the implementation. Mismatches are called out below.
+- [DOC] At the time of the source inventory for this handoff, no root README or formal product requirements document was present. An image-free root README was added afterward; `APIcmd.md` remains and includes claims that no longer match parts of the implementation. Mismatches are called out below.
 
 ## 2. ARCHITECTURE
 
@@ -54,10 +54,7 @@
 │       ├── hooks
 │       └── lib
 ├── docs
-│   ├── PROJECT_CONTEXT.md
-│   └── assets
-│       ├── wot-git-architecture.svg
-│       └── wot-git-overview.svg
+│   └── PROJECT_CONTEXT.md
 ├── packages
 │   └── types
 ├── package.json
@@ -470,5 +467,5 @@ The following files and directories were inspected for this handoff; directory l
 - Web configuration/data flow: `apps/web/package.json`, `apps/web/next.config.mjs`, `apps/web/tailwind.config.ts`, `apps/web/tsconfig.json`, `apps/web/app/page.tsx`, `apps/web/app/guide/page.tsx`, `apps/web/app/r/[owner]/[repo]/page.tsx`, `apps/web/lib/api.ts`, `apps/web/lib/commitActivity.ts`, `dashboardExploration.ts`, `repositoryEvidence.ts`, and their tests.
 - Web panels and shared UI: `apps/web/components/layout/Sidebar.tsx`, `DashboardLoading.tsx`, `NavigationToggle.tsx`, `RepoHeader.tsx`; analysis/overview panels `RepositoryOverview.tsx`, `CommitActivity.tsx`, `FileEvidencePanel.tsx`, `HotspotChart.tsx`, `BugFilesTable.tsx`, `ChurnTable.tsx`, `CommitSizes.tsx`, `CommitLog.tsx`, `OwnershipTable.tsx`, `CoChangeTable.tsx`, `OutlineTree.tsx`, `RepoHealthPanel.tsx`, `ScanCoverageNotice.tsx`; Guide `ProjectGuide.tsx`; shared `SafeMarkdown.tsx`, `ExportCsvButton.tsx`, `InfoTip.tsx`, `FileInspectButton.tsx`, `HashBadge.tsx`, `ScoreBar.tsx`, `ErrorState.tsx`.
 - Tests/benchmark: API service tests `analysis.test.ts`, `gitHistory.test.ts`, `metricParsing.test.ts`, `repoHealth.test.ts`; utility `scan.test.ts`; web helper tests `commitActivity.test.ts`, `dashboardExploration.test.ts`, `repositoryEvidence.test.ts`; benchmark script and fixture under `apps/api/benchmarks/`.
-- [CODE] Repository inventory before the README addition found no root README, `AGENTS.md`, `.github` workflow files, Dockerfile/Compose file, `vercel.json`, or `railway.toml`. This handoff is now supplemented by a root `README.md` and two SVG images. The inventory was limited to the checked-out repository and specified search depth; external deployment settings were not inspected.
+- [CODE] Repository inventory before the README addition found no root README, `AGENTS.md`, `.github` workflow files, Dockerfile/Compose file, `vercel.json`, or `railway.toml`. This handoff is now supplemented by a root `README.md`; no images are embedded in it. The inventory was limited to the checked-out repository and specified search depth; external deployment settings were not inspected.
 - [CODE] Git metadata commands used: `git status --short`, `git log --reverse --format='%h %ad %s' --date=short`, `git log -1`, and `git rev-list --count HEAD`.

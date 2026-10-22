@@ -1,125 +1,92 @@
-<div align="center">
-
-<img src="docs/assets/wot-git-overview.svg" alt="Wot-Git dashboard illustration showing repository activity, file signals, and an evidence panel" width="100%" />
-
 # Wot-Git
 
-### Explore a repository through its Git history
+**A full-stack repository exploration tool built around Git history.**
 
-Wot-Git turns public repository history and recognizable project files into a practical, inspectable report. Use it to orient yourself in an unfamiliar codebase, find files worth investigating, and follow each signal back to the commits and repository evidence behind it.
+Wot-Git helps developers get oriented in an unfamiliar public GitHub repository. It combines bounded Git-history analysis with static repository checks, then links the results to the commits and files behind them. The goal is to help users decide what to inspect next—not to claim that a file is broken or a codebase is healthy.
 
-[Get started](#run-locally) · [How it works](#how-it-works) · [Limitations](#important-limitations)
+## Project at a glance
 
-</div>
-
----
-
-## What Wot-Git helps you explore
-
-Wot-Git is designed for developers joining an unfamiliar project, maintainers reviewing activity patterns, and contributors deciding where to begin exploring. It gives a compact view of repository history without requiring users to install an analysis agent into the repository.
-
-- **Change patterns:** frequently changed files, relative hotspots, co-changed paths, and activity over time.
-- **Commit context:** commit sizes, subjects, author identities, and files associated with keyword-matched bug-fix commits.
-- **Repository signals:** README, recognizable tests and test configuration, CI, Docker configuration, tracked environment files, and limited secret-pattern checks.
-- **Evidence-first exploration:** inspect a file’s recorded commits, change counts, contributors, and related files; export the report data for further review.
-
-These are calculated indicators and static checks. They help you decide what to inspect; they do not establish that a file is defective or that a repository is healthy.
-
-## Product tour
-
-The dashboard visual above is an illustration; its displayed values are examples, not results from a repository scan.
-
-The dashboard starts with **Repository Overview** and the repository README when one can be read. From there, use the existing views:
-
-| Area | What it shows |
+| | |
 |---|---|
-| Overview | Repository README, summary signals, active files and contributors, and report export |
-| Code & Change | Hotspots, file churn, co-change pairs, and source outline |
-| Commit History | Bug-fix-associated files, commit activity, commit sizes, and commit log |
-| Contributors | Recorded Git author identities per file |
-| Repository | Static Health checks and monthly history |
-| Guide | Interpretation, calculations, FAQs, usage terms, and data/privacy details |
+| **Type** | Full-stack TypeScript monorepo |
+| **Frontend** | Next.js 14, React 18, Tailwind CSS, Recharts |
+| **Backend** | Express, simple-git, Node.js |
+| **Shared contract** | Workspace package with API and dashboard types |
+| **Input** | Public GitHub repository URL or `owner/repo` |
+| **Output** | Interactive analysis dashboard, Health report, CSV and Markdown exports |
 
-### How to use it
+## Why this project is interesting
 
-1. Enter a public GitHub URL such as `https://github.com/expressjs/express`, or a short `owner/repo` name.
-2. Wait for the dashboard to clone the repository and prepare the bounded analysis. The progress view reports the current scan stage.
-3. Start with Overview, then follow a file or contributor signal into the relevant analysis view.
-4. Open **Inspect** to see supporting file-level history. Use the linked commits and the repository’s own tests to verify anything important.
-5. Export a CSV for the active analysis view or a concise Markdown report from Overview.
+Wot-Git is an exercise in turning imperfect repository metadata into a useful, inspectable workflow. The project brings together frontend product work and backend systems concerns:
 
-## How it works
+- **Bounded repository processing:** shallow clone, commit/file caps, checkout-size monitoring, clone timeout, and a total scan deadline.
+- **Cancellation and cleanup:** request disconnects propagate through the scan, Git processes can be aborted, and temporary checkouts are removed after processing.
+- **Progress reporting:** the combined dashboard endpoint streams real scan stages to the UI using Server-Sent Events.
+- **Shared API contracts:** frontend and backend consume the same TypeScript result models from the pnpm workspace.
+- **Traceable signals:** file inspection connects summary metrics to the commits, dates, authors, and file changes that produced them.
+- **Safe exports and rendering:** browser-side CSV generation escapes cells and protects spreadsheet formulas; README Markdown is rendered without raw HTML.
+- **Tested edge cases:** parser tests cover unusual Git paths, truncated history, commit-size parsing, score normalization, secret redaction, symlink handling, and cancellation.
 
-Wot-Git uses a pnpm workspace with a Next.js web app, an Express API, and a shared TypeScript types package. The dashboard request clones the repository once, runs Git-history analysis and static Health checks against that temporary checkout, reads the README overview, and returns a combined report.
+## What it analyzes
 
-![Wot-Git architecture: browser and Next.js frontend call the Express API, which clones a public GitHub repository, runs bounded analyzers, and returns typed results](docs/assets/wot-git-architecture.svg)
+### Git history
 
-### Analysis at a glance
+- **Commit activity:** commits grouped by Git author date.
+- **Commit size:** inserted and deleted line totals from Git numstat.
+- **File churn:** number of included commits that touched a path and its latest observed date.
+- **Hotspot:** mean of normalized change frequency and current file size in bytes, relative to files in the same scan.
+- **Ownership:** Git author email identities per file and the most frequent recorded identity.
+- **Co-change:** file pairs that appeared together in multiple commits.
+- **Bug Files:** files changed in commits whose subject contains a whole-word match for `fix`, `bug`, `defect`, `error`, `issue`, `patch`, `repair`, `resolve`, `close`, or `crash`.
+- **Outline:** regex-based function and class extraction for a limited set of languages.
 
-- **Churn** counts how often a file appears in the included commit history; it is not changed lines.
-- **Hotspot** averages the file’s normalized churn and normalized current byte size relative to other included files.
-- **Bug Files** lists files changed by commits whose subject contains a whole-word match for one of the configured English keywords: `fix`, `bug`, `defect`, `error`, `issue`, `patch`, `repair`, `resolve`, `close`, or `crash`.
-- **Ownership** reports Git author email identities from commit metadata. A single-author flag means only one identity was recorded in the bounded history; it does not prove current ownership.
-- **Health** scores the presence of recognized static project signals. It does not install dependencies, run tests, build the project, or certify security.
+### Static repository Health
 
-See the in-app **Guide & Methodology** for calculation details and examples. The code-level handoff is in [`docs/PROJECT_CONTEXT.md`](docs/PROJECT_CONTEXT.md).
+Recognizes common README/documentation, test, CI, Docker, tracked environment-file, project-type, and credential-pattern signals. It does **not** install dependencies, execute tests, build the scanned project, or perform a complete security audit.
 
-## Important limitations
+## How a dashboard scan works
 
-Wot-Git is a decision-support and repository exploration tool, not a bug detector or a code-quality guarantee.
+```text
+Browser (Next.js)
+  └─ POST /dashboard/stream
+       └─ Express API
+            ├─ clone public GitHub repository to a temporary directory
+            ├─ run Git-history analysis and static Health checks in parallel
+            ├─ read the repository README for the Overview
+            ├─ return typed results and stream progress stages
+            └─ remove the temporary checkout
+```
 
-- A commit message can be incomplete or misleading. Bug Files is a keyword heuristic and may miss fixes or associate unrelated changes.
-- Hotspot, churn, co-change, and ownership values describe observed Git history. They are clues to investigate, not proof of risk, coupling, expertise, or defects.
-- Health checks detect recognizable file names, paths, and a small set of text patterns. Finding test files does not show that tests pass or provide good coverage.
-- Secret scanning examines a limited set of text/config files in the current revision only. It can miss secrets and produce false positives; matched values are redacted from the response. It does not scan historical contents.
-- Results are limited to the submitted public GitHub repository and the clone’s default branch. Wot-Git does not analyze uncommitted work or automatically include the contents of other repositories referenced by submodules.
-- Unusual project conventions, renames, generated files, and unsupported source syntax can make signals incomplete.
-
-### Scan limits
-
-Current defaults are deliberately bounded. A report may be marked as partial when a history or file-detail cap is reached; clone/scan timeouts or the checkout size limit can stop a scan.
-
-| Limit | Current value |
-|---|---:|
-| Clone timeout | 60 seconds |
-| Total scan deadline | 3 minutes |
-| Git-history depth requested | 10,001 commits to detect a cap |
-| Commits included in analysis | 10,000 |
-| Checkout size | 1 GiB |
-| Distinct file paths in history metrics | 10,000 |
-| Included paths per commit | 100 |
-| Distinct authors retained per file | 100 |
-| Co-change pairs retained / returned | 100,000 / 200 |
-| Outline files / maximum file size | 300 / 500 KiB |
-| README display size | 256 KiB |
-
-The implementation is authoritative for the precise coverage flags. See [`apps/api/src/config/limits.ts`](apps/api/src/config/limits.ts) and the [technical handoff](docs/PROJECT_CONTEXT.md).
+The combined dashboard uses one clone for its analysis, Health report, and README overview. The API also retains standalone endpoints for analysis and Health checks.
 
 ## Run locally
 
 ### Requirements
 
-- Node.js (the repository does not currently declare a supported Node version range)
-- pnpm 11.x, as used by the current workspace
+- Node.js; a supported version range is not currently declared in the project manifest
+- pnpm 11.x
 - Git available on `PATH`
 
-### Install and start
+### Start both apps
 
 ```bash
 pnpm install
 pnpm dev
 ```
 
-The web app runs at `http://localhost:3000`; the API defaults to `http://localhost:3001`. The web API URL can be changed with `NEXT_PUBLIC_API_URL`; the API port can be changed with `PORT`.
+- Web app: `http://localhost:3000`
+- API: `http://localhost:3001`
 
-Run only one app if needed:
+The API port can be set with `PORT`. The web app uses `NEXT_PUBLIC_API_URL`, defaulting to `http://localhost:3001`.
+
+Run an app separately:
 
 ```bash
 pnpm dev:web
 pnpm dev:api
 ```
 
-Build and check the current test suite:
+### Build and verify
 
 ```bash
 pnpm build
@@ -127,21 +94,21 @@ pnpm --filter @wot-git/api test
 pnpm --filter @wot-git/api benchmark
 ```
 
-The benchmark uses a small manually labeled fixture. Its results are fixture-specific and are not general accuracy claims.
+The offline benchmark uses a small manually labeled fixture. Its numbers describe that fixture only; they are not general accuracy claims.
 
-## API
+## API endpoints
 
-The local API base URL is `http://localhost:3001`.
+Base URL for local development: `http://localhost:3001`.
 
-| Method | Endpoint | Purpose |
+| Method | Path | Description |
 |---|---|---|
 | `GET` | `/health` | API process status |
-| `POST` | `/analyze` | Git-history analysis only |
-| `POST` | `/repo-health` | Static repository Health checks only |
-| `POST` | `/dashboard` | Combined analysis, Health, and README Overview response |
-| `POST` | `/dashboard/stream` | Combined dashboard response with server-sent progress events |
+| `POST` | `/analyze` | Git-history analysis |
+| `POST` | `/repo-health` | Static repository Health checks |
+| `POST` | `/dashboard` | Combined analysis, Health, and README Overview |
+| `POST` | `/dashboard/stream` | Combined dashboard with streamed progress |
 
-Analysis endpoints accept JSON like:
+Analysis requests use JSON:
 
 ```json
 {
@@ -149,22 +116,52 @@ Analysis endpoints accept JSON like:
 }
 ```
 
-To bypass the cache, send `"refresh": true` in the JSON body. The combined dashboard and Health caches live for up to 6 hours; the standalone `/analyze` cache lives for up to 24 hours. They are in-memory caches and are cleared when the API process restarts.
+Set `"refresh": true` in the request body to bypass the cache.
 
-## Privacy and repository handling
+## Resource limits and coverage
 
-The API clones repositories to a temporary directory and removes the checkout after analysis. It stores no persistent user account or repository database in the current implementation. Analysis results are temporarily cached in API process memory according to the lifetimes above. Repository search suggestions are requested directly from GitHub’s public search API by the browser.
+Scans are intentionally bounded. A report can be partial when history or file-detail caps are reached; hard time or checkout-size limits can stop the request.
 
-Only public GitHub repositories are supported. Do not submit private credentials or other sensitive data. The project does not include a deployment configuration, so data handling for any future hosted deployment will depend on the operator’s infrastructure and must be documented separately.
+| Limit | Current value |
+|---|---:|
+| Clone timeout | 60 seconds |
+| Total scan deadline | 3 minutes |
+| Clone depth | 10,001 commits (one beyond the 10,000 analysis cap) |
+| History commits analyzed | 10,000 |
+| Temporary checkout size | 1 GiB |
+| Distinct history paths | 10,000 |
+| Included paths per commit | 100 |
+| Authors retained per file | 100 |
+| Co-change pairs | Up to 100,000 counted; 200 returned |
+| Outline | 300 files; files over 500 KiB skipped |
+| README display | 256 KiB |
 
-## Project status
+The dashboard reports coverage flags when applicable. Consult [`apps/api/src/config/limits.ts`](apps/api/src/config/limits.ts) and [`docs/PROJECT_CONTEXT.md`](docs/PROJECT_CONTEXT.md) for implementation details.
 
-Wot-Git is an actively developed project. The current repository contains API tests, a small offline signal benchmark, and a production buildable web dashboard. The benchmark is not a large-scale accuracy study; results should be validated against real developer tasks before being treated as an effectiveness claim.
+## Important limitations
 
-### License
+- **Signals are not diagnoses.** Hotspots and repeated changes are leads for review, not proof of defects or risk.
+- **Commit wording affects Bug Files.** Keyword matching can miss fixes or associate unrelated changes.
+- **Health checks are static.** Detecting test files does not show that tests exist in another form, pass, or provide adequate coverage.
+- **Secret scanning is limited.** It checks selected text/config files in the current revision for a small set of patterns. It can miss credentials or produce false positives; values are redacted, and historical file contents are not scanned.
+- **History is bounded.** Older commits or file paths may be omitted when scan limits are reached. Renamed paths are not unified into a single historical identity.
+- **Results are repository-specific.** Hotspot values are normalized against files in one scan and are not calibrated for cross-project ranking.
+- **Only public GitHub repositories are supported.** The report does not include uncommitted local changes or automatically fetch submodule contents.
 
-**No `LICENSE` file is currently present in this repository.** The project owner intends to make Wot-Git available for free, but the redistribution and reuse terms have not yet been specified in the codebase. Add a license before describing the source as open source or granting reuse rights.
+Use Wot-Git to choose what to inspect. Verify important findings against the actual commits, code, and project tests.
 
-### Feedback
+## Privacy and data handling
 
-Report issues or suggest improvements on the [Wot-Git issue tracker](https://github.com/KayHo412/Wot-Git/issues).
+The API clones a public repository into a temporary directory, removes that checkout after processing, and caches results in process memory. The standalone `/analyze` result cache lives for up to 24 hours; Health and combined dashboard caches live for up to 6 hours. Cache contents disappear when the API process restarts. No user account or persistent repository database is implemented in this project snapshot.
+
+Repository autocomplete suggestions are fetched by the browser from GitHub’s public repository search API. The submitted repository URL is sent to the Wot-Git API for analysis.
+
+## Status and reuse
+
+Wot-Git is under active development. It includes service tests, a small offline benchmark, and a production-buildable dashboard; broad predictive-accuracy claims have not been established.
+
+**License:** no `LICENSE` file is currently included. The project owner intends to make the tool available for free, but the source reuse and redistribution terms have not yet been selected. Add a license before presenting the repository as open source or granting reuse rights.
+
+## Feedback
+
+Use the [GitHub issue tracker](https://github.com/KayHo412/Wot-Git/issues) to report problems or suggest improvements.
