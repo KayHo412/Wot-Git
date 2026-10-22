@@ -1,7 +1,7 @@
 ﻿import { simpleGit } from 'simple-git'
 import type { CommitRecord, CommitFile, BugAssociatedFile } from '@wot-git/types'
 import { isExcludedFile } from '../utils/fileFilter'
-import { isBugFixMessage } from '../utils/bugFix'
+import { getBugFixKeyword } from '../utils/bugFix'
 import { ANALYSIS_MAX_COMMITS } from '../config/limits'
 import { scanGit, throwIfAborted } from '../utils/scan'
 
@@ -42,6 +42,7 @@ export function parseCommitReaderOutput(raw: string, maxCommits: number): Commit
         continue
       }
       const message = lines[5] ?? ''
+      const matchedBugFixKeyword = getBugFixKeyword(message)
       current = {
         hash,
         authorName: lines[2] ?? '',
@@ -49,7 +50,9 @@ export function parseCommitReaderOutput(raw: string, maxCommits: number): Commit
         timestamp: lines[4] ?? '',
         message,
         files: [],
-        isBugFix: isBugFixMessage(message),
+        filesTruncated: false,
+        isBugFix: matchedBugFixKeyword !== null,
+        matchedBugFixKeyword,
       }
       continue
     }
@@ -67,7 +70,10 @@ export function parseCommitReaderOutput(raw: string, maxCommits: number): Commit
     }
     if (path && !isExcludedFile(path)) {
       if (current.files.length < 100) current.files.push({ path, insertions, deletions })
-      else filesTruncated = true
+      else {
+        current.filesTruncated = true
+        filesTruncated = true
+      }
     }
   }
   if (current && commitLog.length < maxCommits) commitLog.push(current)

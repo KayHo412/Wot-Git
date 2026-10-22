@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="430" viewBox="0 0 1100 430" role="img" aria-labelledby="title desc">
+  <title id="title">Wot-Git architecture</title>
+  <desc id="desc">Browser and Next.js web frontend connect to an Express API. The API clones a public GitHub repository to temporary storage, runs analysis and Health services, then returns typed dashboard data to the browser.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0L8 4L0 8Z" fill="#58a6ff"/></marker>
+  </defs>
+  <rect width="1100" height="430" fill="#0d1117"/>
+  <text x="40" y="46" fill="#e6edf3" font-family="Inter,system-ui,sans-serif" font-size="18" font-weight="600">Wot-Git request flow</text>
+  <text x="40" y="69" fill="#8b949e" font-family="Inter,system-ui,sans-serif" font-size="12">One temporary checkout feeds the combined dashboard analysis.</text>
+  <g stroke="#30363d" fill="#111820">
+    <rect x="40" y="123" width="220" height="118"/>
+    <rect x="330" y="123" width="220" height="118"/>
+    <rect x="620" y="123" width="220" height="118"/>
+    <rect x="870" y="123" width="190" height="118"/>
+    <rect x="330" y="300" width="510" height="76"/>
+  </g>
+  <g font-family="Inter,system-ui,sans-serif">
+    <text x="60" y="153" fill="#58a6ff" font-size="10" letter-spacing="1.4">USER</text>
+    <text x="60" y="184" fill="#e6edf3" font-size="16" font-weight="600">Browser</text>
+    <text x="60" y="207" fill="#8b949e" font-size="12">Repository URL</text>
+    <text x="60" y="225" fill="#8b949e" font-size="12">Dashboard views &amp; exports</text>
+
+    <text x="350" y="153" fill="#58a6ff" font-size="10" letter-spacing="1.4">FRONTEND</text>
+    <text x="350" y="184" fill="#e6edf3" font-size="16" font-weight="600">Next.js 14 · React</text>
+    <text x="350" y="207" fill="#8b949e" font-size="12">:3000 in development</text>
+    <text x="350" y="225" fill="#8b949e" font-size="12">Uses shared TypeScript types</text>
+
+    <text x="640" y="153" fill="#58a6ff" font-size="10" letter-spacing="1.4">BACKEND</text>
+    <text x="640" y="184" fill="#e6edf3" font-size="16" font-weight="600">Express API</text>
+    <text x="640" y="207" fill="#8b949e" font-size="12">:3001 by default</text>
+    <text x="640" y="225" fill="#8b949e" font-size="12">Routes · in-memory cache · SSE</text>
+
+    <text x="890" y="153" fill="#58a6ff" font-size="10" letter-spacing="1.4">SOURCE</text>
+    <text x="890" y="184" fill="#e6edf3" font-size="16" font-weight="600">Public GitHub</text>
+    <text x="890" y="207" fill="#8b949e" font-size="12">Default-branch clone</text>
+    <text x="890" y="225" fill="#8b949e" font-size="12">Git history + files</text>
+
+    <text x="350" y="329" fill="#58a6ff" font-size="10" letter-spacing="1.4">SHARED CONTRACT</text>
+    <text x="350" y="354" fill="#e6edf3" font-size="15" font-weight="600">@wot-git/types</text>
+    <text x="510" y="354" fill="#8b949e" font-size="12">AnalysisResult · RepoHealthResult · DashboardResult</text>
+  </g>
+  <g fill="none" stroke="#58a6ff" stroke-width="1.5" marker-end="url(#arrow)">
+    <path d="M260 182H320"/>
+    <path d="M550 182H610"/>
+    <path d="M840 182H860"/>
+    <path d="M440 241V290"/>
+    <path d="M710 300V251"/>
+  </g>
+  <text x="266" y="166" fill="#8b949e" font-family="ui-monospace,monospace" font-size="9">JSON / SSE</text>
+  <text x="557" y="166" fill="#8b949e" font-family="ui-monospace,monospace" font-size="9">clone + analyze</text>
+  <text x="842" y="166" fill="#8b949e" font-family="ui-monospace,monospace" font-size="9">git clone</text>
+  <text x="40" y="408" fill="#8b949e" font-family="Inter,system-ui,sans-serif" font-size="11">The API removes the temporary checkout after processing; report caches live in process memory.</text>
+</svg>

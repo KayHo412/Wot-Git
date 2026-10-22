@@ -8,15 +8,19 @@ import { FileInspectButton } from "@/components/shared/FileInspectButton"
 import { InfoTip } from "@/components/shared/InfoTip"
 import type { GuideSectionId } from "@/components/guide/guideTypes"
 import { Search, AlertTriangle, ShieldCheck } from "lucide-react"
+import { ExportCsvButton } from "@/components/shared/ExportCsvButton"
 
 interface OwnershipTableProps {
   data: FileOwnership[]
   onInspect?: (path: string) => void
   selectedFile?: string | null
   onOpenGuide: (section: GuideSectionId) => void
+  selectedContributor?: string | null
+  onClearContributor?: () => void
+  analyzedAt: string; historyTruncated: boolean; commitFilesTruncated: boolean; repo: string
 }
 
-export function OwnershipTable({ data, onInspect, selectedFile, onOpenGuide }: OwnershipTableProps) {
+export function OwnershipTable({ data, onInspect, selectedFile, onOpenGuide, selectedContributor = null, onClearContributor, analyzedAt, historyTruncated, commitFilesTruncated, repo }: OwnershipTableProps) {
   const [search, setSearch] = useState("")
   const [busFactorOnly, setBusFactorOnly] = useState(false)
   const [limit, setLimit] = useState(50)
@@ -27,12 +31,13 @@ export function OwnershipTable({ data, onInspect, selectedFile, onOpenGuide }: O
 
   const filtered = useMemo(() => {
     return data.filter((item) => {
+      if (selectedContributor && !item.authors.includes(selectedContributor)) return false
       if (busFactorOnly && !item.isBusFactor) return false
       if (!search) return true
       const q = search.toLowerCase()
       return item.path.toLowerCase().includes(q) || item.dominantAuthor.toLowerCase().includes(q)
     })
-  }, [data, search, busFactorOnly])
+  }, [data, search, busFactorOnly, selectedContributor])
 
   const displayed = filtered.slice(0, limit)
 
@@ -70,6 +75,8 @@ export function OwnershipTable({ data, onInspect, selectedFile, onOpenGuide }: O
             </div>
           </div>
         </div>
+        {selectedContributor && <div className="mt-2 flex flex-wrap items-center justify-between gap-2 border-l-2 border-accent pl-2 text-xs"><span className="break-all text-primary">Contributor identity: {selectedContributor}</span><button type="button" onClick={onClearContributor} className="text-accent underline hover:no-underline">Clear contributor filter</button></div>}
+        <div className="mt-2"><ExportCsvButton filename={`${repo}-ownership.csv`} analyzedAt={analyzedAt} historyTruncated={historyTruncated} commitFilesTruncated={commitFilesTruncated} headers={["Path", "Contributor emails", "Dominant author", "Single recorded author"]} rows={filtered.map(f => [f.path, f.authors.join("; "), f.dominantAuthor, f.isBusFactor])} /></div>
       </CardHeader>
       <CardContent className="p-0">
         <div className="overflow-x-auto">

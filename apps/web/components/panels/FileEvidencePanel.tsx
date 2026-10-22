@@ -7,6 +7,10 @@ import { formatDate } from "@/lib/utils"
 import { FilePath } from "@/components/shared/FilePath"
 import { InfoTip } from "@/components/shared/InfoTip"
 import type { GuideSectionId } from "@/components/guide/guideTypes"
+import { commitsForFile } from "@/lib/repositoryEvidence"
+import { filterCommitsByMonth, monthlyFileActivity } from "@/lib/dashboardExploration"
+import { useMemo } from "react"
+import { commitsInDateRange } from "@/lib/commitActivity"
 
 interface FileEvidencePanelProps {
   path: string
@@ -15,12 +19,16 @@ interface FileEvidencePanelProps {
   onInspect: (path: string) => void
   onSelectTab: (tab: TabId) => void
   onOpenGuide: (section: GuideSectionId) => void
+  startDate: string
+  endDate: string
+  pathFilter: string
 }
 
-export function FileEvidencePanel({ path, analysis, onClose, onInspect, onSelectTab, onOpenGuide }: FileEvidencePanelProps) {
+export function FileEvidencePanel({ path, analysis, onClose, onInspect, onSelectTab, onOpenGuide, startDate, endDate, pathFilter }: FileEvidencePanelProps) {
   const panelRef = useRef<HTMLElement>(null)
   const previousPath = useRef<string | null>(null)
   const [announcement, setAnnouncement] = useState("")
+  const [selectedMonth, setSelectedMonth] = useState("")
 
   useEffect(() => {
     const switched = previousPath.current !== null && previousPath.current !== path
@@ -64,6 +72,13 @@ export function FileEvidencePanel({ path, analysis, onClose, onInspect, onSelect
   const hotspot = analysis.hotspots.find(item => item.path === path)
   const ownership = analysis.ownership.find(item => item.path === path)
   const bugFile = analysis.bugFiles.find(item => item.path === path)
+  const supportingCommits = commitsForFile(analysis.commitLog, path)
+  const monthlyActivity = useMemo(() => monthlyFileActivity(analysis.commitLog, path, analysis.analyzedAt, startDate, endDate), [analysis.commitLog, path, analysis.analyzedAt, startDate, endDate])
+  const filteredSupportingCommits = filterCommitsByMonth(commitsInDateRange(supportingCommits, startDate, endDate)
+    .filter(commit => !pathFilter.trim() || commit.files.some(file => file.path.toLowerCase().includes(pathFilter.trim().toLowerCase())))
+    , selectedMonth)
+  const displayedCommits = filteredSupportingCommits.slice(0, 10)
+  const commitEvidenceMayBePartial = analysis.scan.historyTruncated || analysis.scan.commitFilesTruncated
   const related = analysis.cochange
     .filter(pair => pair.fileA === path || pair.fileB === path)
     .sort((a, b) => b.count - a.count || a.fileA.localeCompare(b.fileA) || a.fileB.localeCompare(b.fileB))
@@ -89,6 +104,36 @@ export function FileEvidencePanel({ path, analysis, onClose, onInspect, onSelect
         <Evidence label="Relative hotspot" value={hotspot ? hotspot.hotspotScore.toFixed(4) : "No data"} detail={hotspot ? `Change ${hotspot.churnScore.toFixed(4)} · size ${hotspot.sizeScore.toFixed(4)}` : "Outside the analyzed file set"} onClick={() => onSelectTab("hotspots")} />
         <Evidence label="Contributors" value={ownership ? `${ownership.authors.length}` : "No data"} detail={ownership ? `Dominant: ${ownership.dominantAuthor}${ownership.isBusFactor ? " · one recorded author" : ""}` : "No ownership data"} onClick={() => onSelectTab("ownership")} />
         <Evidence label="Bug-fix-associated commits" value={bugFile ? `${bugFile.bugFixCount}` : "0"} detail="Commit subjects matched the bug-fix keyword heuristic" onClick={() => onSelectTab("bugfiles")} />
+      </div>
+
+      <div className="border-t border-border px-4 py-3">
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <h3 className="text-xs font-semibold text-primary">Monthly file activity</h3>
+          <span className="text-[11px] text-muted">12 months ending {analysis.analyzedAt.slice(0, 7)}</span>
+        </div>
+        <div className="mt-2 grid grid-cols-4 gap-1 sm:grid-cols-6 lg:grid-cols-12" role="group" aria-label="Select a month to filter file commit evidence">
+          {monthlyActivity.map(point => <button key={point.month} type="button" aria-pressed={selectedMonth === point.month} onClick={() => setSelectedMonth(current => current === point.month ? "" : point.month)} className={`border px-1 py-2 text-center focus-visible:outline focus-visible:outline-1 focus-visible:outline-accent ${selectedMonth === point.month ? "border-accent bg-accent/10 text-accent" : "border-border text-muted hover:bg-surface"}`} title={`${point.month}: ${point.count} commits`}><span className="block text-[10px]">{point.month.slice(5)}</span><span className="mt-1 block font-mono text-xs">{point.count}</span></button>)}
+        </div>
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-2"><h3 className="text-xs font-semibold text-primary">Commits that changed this file</h3><span className="text-[11px] text-muted">{displayedCommits.length} shown · {filteredSupportingCommits.length} matching</span></div>
+        {(selectedMonth || startDate || endDate || pathFilter) && <button type="button" onClick={() => setSelectedMonth("")} className="mt-1 text-[11px] text-accent underline hover:no-underline">Clear month selection {selectedMonth ? `(${selectedMonth})` : "and use shared filters"}</button>}
+        {displayedCommits.length ? <ul className="mt-2 divide-y divide-border/60">
+          {displayedCommits.map(commit => {
+            const file = commit.files.find(item => item.path === path)!
+            return <li key={commit.hash} className="flex flex-col gap-1 py-2 text-xs sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                  <a href={`${analysis.repoUrl.replace(/\/+$/, "")}/commit/${commit.hash}`} target="_blank" rel="noreferrer" className="font-mono text-accent underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-1 focus-visible:outline-accent">{commit.hash.slice(0, 7)}</a>
+                  <span className="text-muted">{commit.timestamp ? formatDate(commit.timestamp) : "Date unavailable"}</span>
+                  {commit.isBugFix && <span className="border border-border px-1.5 py-0.5 text-[10px] text-muted">Bug-fix keyword: “{commit.matchedBugFixKeyword ?? "matched"}”</span>}
+                </div>
+                <p className="mt-1 break-words text-primary">{commit.message || "(no subject)"}</p>
+              </div>
+              <span className="shrink-0 font-mono text-[11px] text-muted">+{file.insertions} / −{file.deletions}</span>
+            </li>
+          })}
+        </ul> : <p className="mt-2 text-xs text-muted">No matching commit records were returned for this file.</p>}
+        {filteredSupportingCommits.length > displayedCommits.length && <p className="mt-2 text-[11px] text-muted">Showing the 10 most recent of {filteredSupportingCommits.length} matching commits.</p>}
+        {commitEvidenceMayBePartial && <p className="mt-2 border-l-2 border-accent/60 pl-2 text-[11px] text-muted">This commit list may be incomplete because the scan reached its history or per-commit file limit.</p>}
       </div>
 
       <div className="px-4 py-3">

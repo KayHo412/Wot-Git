@@ -6,7 +6,6 @@ import {
 } from "lucide-react"
 import { useEffect, useState } from "react"
 import { cn } from "@/lib/utils"
-import packageInfo from "../../package.json"
 
 export type TabId =
   | "overview"
@@ -138,12 +137,13 @@ export function Sidebar({ activeTab = "hotspots", onSelectTab, isOpen = true }: 
           )
         })}
       </nav>
-      <footer className="border-t border-border p-3 text-[11px] text-muted">
-        <div className="font-semibold text-primary">◈ Wot-Git</div>
-        <div className="mt-0.5">Version {packageInfo.version}</div>
-        <a className="mt-2 inline-flex hover:text-accent" href="https://github.com/KayHo412/Wot-Git/issues" target="_blank" rel="noreferrer">
-          Feedback &amp; issues <span className="sr-only">(opens in a new tab)</span>
-        </a>
+      <footer className="border-t border-border px-3 py-3 text-[11px] text-muted">
+        <div className="flex items-center justify-between gap-2">
+          <span className="font-semibold text-primary">◈ Wot-Git</span>
+          <a className="hover:text-accent focus-visible:outline focus-visible:outline-1 focus-visible:outline-accent" href="https://github.com/KayHo412/Wot-Git/issues" target="_blank" rel="noreferrer">
+            Feedback &amp; issues <span className="sr-only">(opens in a new tab)</span>
+          </a>
+        </div>
       </footer>
     </aside>
   )

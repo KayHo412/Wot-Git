@@ -9,6 +9,7 @@ import { HashBadge } from "@/components/shared/HashBadge"
 import { Search } from "lucide-react"
 import { InfoTip } from "@/components/shared/InfoTip"
 import type { GuideSectionId } from "@/components/guide/guideTypes"
+import { ExportCsvButton } from "@/components/shared/ExportCsvButton"
 
 interface BugFilesTableProps {
   data: BugAssociatedFile[]
@@ -18,9 +19,10 @@ interface BugFilesTableProps {
   onInspect?: (path: string) => void
   selectedFile?: string | null
   onOpenGuide: (section: GuideSectionId) => void
+  analyzedAt: string; historyTruncated: boolean; commitFilesTruncated: boolean
 }
 
-export function BugFilesTable({ data, totalBugFixCommits, owner, repo, onInspect, selectedFile, onOpenGuide }: BugFilesTableProps) {
+export function BugFilesTable({ data, totalBugFixCommits, owner, repo, onInspect, selectedFile, onOpenGuide, analyzedAt, historyTruncated, commitFilesTruncated }: BugFilesTableProps) {
   const [search, setSearch] = useState("")
   const [limit, setLimit] = useState(50)
 
@@ -39,6 +41,7 @@ export function BugFilesTable({ data, totalBugFixCommits, owner, repo, onInspect
             <p className="text-xs text-muted">
               Files modified in commits whose messages indicate defect resolution ({totalBugFixCommits.toLocaleString()} bug-fix commits total)
             </p>
+            <ExportCsvButton filename={`${repo}-bug-files.csv`} analyzedAt={analyzedAt} historyTruncated={historyTruncated} commitFilesTruncated={commitFilesTruncated} headers={["Path", "Bug-fix-associated commits", "Commit hashes"]} rows={filtered.map(f => [f.path, f.bugFixCount, f.commits.join(" ")])} />
           </div>
           <div className="relative w-full sm:w-64">
             <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted" />

@@ -5,7 +5,7 @@ import { join } from 'node:path'
 import { simpleGit } from 'simple-git'
 import { afterEach, describe, it } from 'node:test'
 import { calculateCoChange, readGitHistory } from './gitHistory'
-import { runCommitReader } from './commitReader'
+import { parseCommitReaderOutput, runCommitReader } from './commitReader'
 
 const tempPaths: string[] = []
 
@@ -67,5 +67,21 @@ describe('readGitHistory', () => {
     const result = await readGitHistory(repoPath, 2)
     assert.equal(result.commitsAnalyzed, 2)
     assert.equal(result.historyTruncated, true)
+  })
+})
+
+describe('parseCommitReaderOutput', () => {
+  it('records the matched keyword and marks a commit whose file list was capped', () => {
+    const hash = 'a'.repeat(40)
+    const header = `COMMIT_START\n${hash}\nWot Git Test\ntest@example.invalid\n2026-06-01T10:00:00+00:00\nFix parser crash`
+    const fileRows = Array.from({ length: 101 }, (_, index) => `1\t0\tsrc/file-${index}.ts`)
+    const result = parseCommitReaderOutput([header, ...fileRows].join('\0'), 10)
+
+    assert.equal(result.commitLog.length, 1)
+    assert.equal(result.commitLog[0].isBugFix, true)
+    assert.equal(result.commitLog[0].matchedBugFixKeyword, 'fix')
+    assert.equal(result.commitLog[0].files.length, 100)
+    assert.equal(result.commitLog[0].filesTruncated, true)
+    assert.equal(result.filesTruncated, true)
   })
 })

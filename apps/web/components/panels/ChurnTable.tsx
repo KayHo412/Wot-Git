@@ -9,15 +9,17 @@ import { isStale, formatDate } from "@/lib/utils";
 import { Search } from "lucide-react";
 import { InfoTip } from "@/components/shared/InfoTip";
 import type { GuideSectionId } from "@/components/guide/guideTypes";
+import { ExportCsvButton } from "@/components/shared/ExportCsvButton";
 
 interface ChurnTableProps {
   data: FileChurn[];
   onInspect?: (path: string) => void;
   selectedFile?: string | null;
   onOpenGuide: (section: GuideSectionId) => void;
+  analyzedAt: string; historyTruncated: boolean; commitFilesTruncated: boolean; repo: string;
 }
 
-export function ChurnTable({ data, onInspect, selectedFile, onOpenGuide }: ChurnTableProps) {
+export function ChurnTable({ data, onInspect, selectedFile, onOpenGuide, analyzedAt, historyTruncated, commitFilesTruncated, repo }: ChurnTableProps) {
   const [search, setSearch] = useState("");
   const [limit, setLimit] = useState(50);
 
@@ -39,6 +41,7 @@ export function ChurnTable({ data, onInspect, selectedFile, onOpenGuide }: Churn
               Most frequently modified files across repository commits
               <br />
             </p>
+            <ExportCsvButton filename={`${repo}-churn.csv`} analyzedAt={analyzedAt} historyTruncated={historyTruncated} commitFilesTruncated={commitFilesTruncated} headers={["Path", "Commits", "Last touched"]} rows={filtered.map(f => [f.path, f.churnCount, f.lastTouched])} />
           </div>
           <div className="relative w-full sm:w-64">
             <Search

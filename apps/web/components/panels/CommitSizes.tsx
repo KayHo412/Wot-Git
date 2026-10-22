@@ -16,13 +16,15 @@ import { formatDate } from "@/lib/utils"
 import { Scale, Zap, FileDiff, AlertCircle } from "lucide-react"
 import { InfoTip } from "@/components/shared/InfoTip"
 import type { GuideSectionId } from "@/components/guide/guideTypes"
+import { ExportCsvButton } from "@/components/shared/ExportCsvButton"
 
 interface CommitSizesProps {
   data: CommitSize[]
   commitLog?: CommitRecord[]
   owner?: string
-  repo?: string
+  repo: string
   onOpenGuide: (section: GuideSectionId) => void
+  analyzedAt: string; historyTruncated: boolean; commitFilesTruncated: boolean
 }
 
 interface Bucket {
@@ -34,7 +36,7 @@ interface Bucket {
   color: string
 }
 
-export function CommitSizes({ data, commitLog = [], owner, repo, onOpenGuide }: CommitSizesProps) {
+export function CommitSizes({ data, commitLog = [], owner, repo, onOpenGuide, analyzedAt, historyTruncated, commitFilesTruncated }: CommitSizesProps) {
   const [mounted, setMounted] = useState(false)
   useEffect(() => setMounted(true), [])
 
@@ -162,6 +164,7 @@ export function CommitSizes({ data, commitLog = [], owner, repo, onOpenGuide }: 
   return (
     <div className="space-y-6" id="commitsizes">
       {/* 1. Stat Summary Cards */}
+      <div className="flex justify-end"><ExportCsvButton filename={`${repo}-commit-sizes.csv`} analyzedAt={analyzedAt} historyTruncated={historyTruncated} commitFilesTruncated={commitFilesTruncated} headers={["Hash", "Date", "Insertions", "Deletions", "Total lines"]} rows={data.map(c => [c.hash,c.date,c.insertions,c.deletions,c.insertions+c.deletions])} /></div>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <Card className="border-border bg-surface">
           <CardContent className="py-3 px-4 flex items-center gap-3">

@@ -57,7 +57,9 @@ export interface CommitRecord {
   timestamp: string    // git %aI — strict ISO 8601 with timezone
   message: string      // git %s  — commit subject (first line)
   files: CommitFile[]  // per-file numstat for this commit
+  filesTruncated: boolean // more than the per-commit file limit matched this commit
   isBugFix: boolean    // true if message matches bug-fix keyword heuristic
+  matchedBugFixKeyword: string | null // lowercase keyword matched in the subject, when applicable
 }
 
 // A file that appeared in one or more bug-fix commits

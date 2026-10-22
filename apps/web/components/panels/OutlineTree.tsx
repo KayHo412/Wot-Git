@@ -7,15 +7,17 @@ import { FileCode, FunctionSquare, Box, Search } from "lucide-react"
 import { FileInspectButton } from "@/components/shared/FileInspectButton"
 import { InfoTip } from "@/components/shared/InfoTip"
 import type { GuideSectionId } from "@/components/guide/guideTypes"
+import { ExportCsvButton } from "@/components/shared/ExportCsvButton"
 
 interface OutlineTreeProps {
   data: Record<string, FileOutline[]>
   onInspect?: (path: string) => void
   selectedFile?: string | null
   onOpenGuide: (section: GuideSectionId) => void
+  analyzedAt: string; historyTruncated: boolean; commitFilesTruncated: boolean; repo: string
 }
 
-export function OutlineTree({ data, onInspect, selectedFile: inspectedFile, onOpenGuide }: OutlineTreeProps) {
+export function OutlineTree({ data, onInspect, selectedFile: inspectedFile, onOpenGuide, analyzedAt, historyTruncated, commitFilesTruncated, repo }: OutlineTreeProps) {
   const fileKeys = useMemo(() => Object.keys(data).sort(), [data])
   const [selectedFile, setSelectedFile] = useState<string>(fileKeys[0] ?? "")
   const [search, setSearch] = useState("")
@@ -52,6 +54,7 @@ export function OutlineTree({ data, onInspect, selectedFile: inspectedFile, onOp
           Extracted function and class declarations across parsed source files ({fileKeys.length} files)
         </p>
       </CardHeader>
+      <div className="px-4 pt-3"><ExportCsvButton filename={`${repo}-outline.csv`} analyzedAt={analyzedAt} historyTruncated={historyTruncated} commitFilesTruncated={commitFilesTruncated} headers={["Path", "Symbol", "Type", "Line"]} rows={filteredFiles.flatMap(path => (data[path] ?? []).map(symbol => [path,symbol.name,symbol.type,symbol.line]))} /></div>
       <CardContent className="p-0">
         <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-border min-h-[350px]">
           {/* File selector column */}

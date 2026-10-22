@@ -14,12 +14,14 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { FileInspectButton } from "@/components/shared/FileInspectButton";
 import { InfoTip } from "@/components/shared/InfoTip";
 import type { GuideSectionId } from "@/components/guide/guideTypes";
+import { ExportCsvButton } from "@/components/shared/ExportCsvButton";
 
 interface HotspotChartProps {
   data: Hotspot[];
   onInspect?: (path: string) => void;
   selectedFile?: string | null;
   onOpenGuide: (section: GuideSectionId) => void;
+  analyzedAt: string; historyTruncated: boolean; commitFilesTruncated: boolean; repo: string;
 }
 
 function getPointColor(score: number): string {
@@ -28,7 +30,7 @@ function getPointColor(score: number): string {
   return "#3fb950"; // safe green
 }
 
-export function HotspotChart({ data, onInspect, selectedFile, onOpenGuide }: HotspotChartProps) {
+export function HotspotChart({ data, onInspect, selectedFile, onOpenGuide, analyzedAt, historyTruncated, commitFilesTruncated, repo }: HotspotChartProps) {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => setMounted(true), []);
@@ -74,6 +76,7 @@ export function HotspotChart({ data, onInspect, selectedFile, onOpenGuide }: Hot
         </div>
       </CardHeader>
       <CardContent>
+        <div className="mb-2"><ExportCsvButton filename={`${repo}-hotspots.csv`} analyzedAt={analyzedAt} historyTruncated={historyTruncated} commitFilesTruncated={commitFilesTruncated} headers={["Path", "Churn score", "Size score", "Hotspot score"]} rows={data.map(x => [x.path,x.churnScore,x.sizeScore,x.hotspotScore])} /></div>
         <div className="relative h-[340px] w-full pt-2 select-none">
           {/* Subtle quadrant labels */}
           <>

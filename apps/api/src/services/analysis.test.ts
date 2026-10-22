@@ -36,6 +36,8 @@ describe('runAnalysis', () => {
     assert.equal(result.churn.find(file => file.path === 'src/service.ts')?.churnCount, 2)
     assert.equal(result.commitLog.length, 2)
     assert.equal(result.commitLog.find(commit => commit.message === 'fix service crash')?.isBugFix, true)
+    assert.equal(result.commitLog.find(commit => commit.message === 'fix service crash')?.matchedBugFixKeyword, 'fix')
+    assert.equal(result.commitLog.find(commit => commit.message === 'add service')?.matchedBugFixKeyword, null)
     assert.equal(result.bugFiles.find(file => file.path === 'src/service.ts')?.bugFixCount, 1)
     assert.equal(result.ownership.find(file => file.path === 'src/service.ts')?.authors.length, 1)
     assert.equal(result.commitSizes.length, 2)

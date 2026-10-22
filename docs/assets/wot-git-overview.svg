@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="500" viewBox="0 0 1200 500" role="img" aria-labelledby="title desc">
+  <title id="title">Wot-Git repository analysis dashboard</title>
+  <desc id="desc">A dark analytical dashboard mockup showing repository navigation, a commit activity chart, hotspot file rows, and an evidence panel.</desc>
+  <rect width="1200" height="500" fill="#0d1117"/>
+  <rect x="22" y="22" width="1156" height="456" fill="#0d1117" stroke="#30363d"/>
+  <rect x="22" y="22" width="1156" height="48" fill="#111820"/>
+  <path d="M22 70H1178M234 70V478" stroke="#30363d"/>
+  <text x="46" y="53" fill="#e6edf3" font-family="Inter,system-ui,sans-serif" font-size="17" font-weight="650">◈ Wot-Git</text>
+  <text x="260" y="52" fill="#8b949e" font-family="Inter,system-ui,sans-serif" font-size="13">Repository overview</text>
+  <text x="383" y="52" fill="#e6edf3" font-family="ui-monospace,monospace" font-size="13">expressjs / express</text>
+  <rect x="40" y="93" width="176" height="28" fill="#10243e" stroke="#2f81f7"/>
+  <rect x="40" y="93" width="2" height="28" fill="#2f81f7"/>
+  <text x="55" y="112" fill="#58a6ff" font-family="Inter,system-ui,sans-serif" font-size="12" font-weight="600">▦  Repository overview</text>
+  <text x="53" y="154" fill="#8b949e" font-family="Inter,system-ui,sans-serif" font-size="12">⌁  Code &amp; Change</text>
+  <text x="53" y="187" fill="#8b949e" font-family="Inter,system-ui,sans-serif" font-size="12">↳  Commit History</text>
+  <text x="53" y="220" fill="#8b949e" font-family="Inter,system-ui,sans-serif" font-size="12">♙  Contributors</text>
+  <text x="53" y="253" fill="#8b949e" font-family="Inter,system-ui,sans-serif" font-size="12">♡  Repository Health</text>
+  <text x="53" y="286" fill="#8b949e" font-family="Inter,system-ui,sans-serif" font-size="12">▤  Guide &amp; Methodology</text>
+  <text x="260" y="105" fill="#8b949e" font-family="Inter,system-ui,sans-serif" font-size="10" letter-spacing="1.4">REPOSITORY OVERVIEW</text>
+  <text x="260" y="135" fill="#e6edf3" font-family="Inter,system-ui,sans-serif" font-size="20" font-weight="600">Explore the project through its history</text>
+  <text x="260" y="156" fill="#8b949e" font-family="Inter,system-ui,sans-serif" font-size="11">Signals are linked to commits and files so you can review the evidence yourself.</text>
+  <g>
+    <rect x="260" y="177" width="213" height="86" fill="#111820" stroke="#30363d"/>
+    <rect x="485" y="177" width="213" height="86" fill="#111820" stroke="#30363d"/>
+    <rect x="710" y="177" width="213" height="86" fill="#111820" stroke="#30363d"/>
+    <rect x="935" y="177" width="220" height="86" fill="#111820" stroke="#30363d"/>
+    <text x="276" y="200" fill="#8b949e" font-family="Inter,system-ui,sans-serif" font-size="10">COMMITS ANALYZED</text>
+    <text x="276" y="235" fill="#e6edf3" font-family="ui-monospace,monospace" font-size="24">4,218</text>
+    <text x="501" y="200" fill="#8b949e" font-family="Inter,system-ui,sans-serif" font-size="10">FILES CHANGED</text>
+    <text x="501" y="235" fill="#e6edf3" font-family="ui-monospace,monospace" font-size="24">1,306</text>
+    <text x="726" y="200" fill="#8b949e" font-family="Inter,system-ui,sans-serif" font-size="10">CONTRIBUTORS</text>
+    <text x="726" y="235" fill="#e6edf3" font-family="ui-monospace,monospace" font-size="24">182</text>
+    <text x="951" y="200" fill="#8b949e" font-family="Inter,system-ui,sans-serif" font-size="10">HEALTH CHECKS</text>
+    <text x="951" y="235" fill="#e6edf3" font-family="ui-monospace,monospace" font-size="24">Static signals</text>
+  </g>
+  <rect x="260" y="280" width="550" height="174" fill="#111820" stroke="#30363d"/>
+  <text x="280" y="306" fill="#e6edf3" font-family="Inter,system-ui,sans-serif" font-size="13" font-weight="600">Commit activity</text>
+  <text x="280" y="324" fill="#8b949e" font-family="Inter,system-ui,sans-serif" font-size="10">Recorded author dates · bounded recent history</text>
+  <path d="M280 422H790M280 385H790M280 348H790" stroke="#30363d" stroke-dasharray="2 5"/>
+  <path d="M282 416L310 409L338 414L366 383L394 395L422 376L450 390L478 358L506 374L534 346L562 371L590 356L618 367L646 335L674 355L702 343L730 360L758 322L788 339V422H282Z" fill="#2f81f7" fill-opacity=".12"/>
+  <path d="M282 416L310 409L338 414L366 383L394 395L422 376L450 390L478 358L506 374L534 346L562 371L590 356L618 367L646 335L674 355L702 343L730 360L758 322L788 339" fill="none" stroke="#2f81f7" stroke-width="2"/>
+  <rect x="824" y="280" width="331" height="174" fill="#111820" stroke="#30363d"/>
+  <text x="844" y="306" fill="#e6edf3" font-family="Inter,system-ui,sans-serif" font-size="13" font-weight="600">File evidence</text>
+  <text x="844" y="327" fill="#58a6ff" font-family="ui-monospace,monospace" font-size="10">lib/router/index.js</text>
+  <path d="M844 343H1135M844 376H1135M844 409H1135" stroke="#30363d"/>
+  <text x="844" y="363" fill="#8b949e" font-family="Inter,system-ui,sans-serif" font-size="10">Changes recorded</text>
+  <text x="1118" y="363" fill="#e6edf3" text-anchor="end" font-family="ui-monospace,monospace" font-size="11">42 commits</text>
+  <text x="844" y="396" fill="#8b949e" font-family="Inter,system-ui,sans-serif" font-size="10">Relative hotspot score</text>
+  <text x="1118" y="396" fill="#e6edf3" text-anchor="end" font-family="ui-monospace,monospace" font-size="11">0.82</text>
+  <text x="844" y="429" fill="#8b949e" font-family="Inter,system-ui,sans-serif" font-size="10">Supporting commits</text>
+  <text x="1118" y="429" fill="#58a6ff" text-anchor="end" font-family="Inter,system-ui,sans-serif" font-size="10">Inspect history →</text>
+</svg>

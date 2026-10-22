@@ -9,17 +9,21 @@ import { formatDate } from "@/lib/utils"
 import { Search, ChevronLeft, ChevronRight } from "lucide-react"
 import { InfoTip } from "@/components/shared/InfoTip"
 import type { GuideSectionId } from "@/components/guide/guideTypes"
+import { ExportCsvButton } from "@/components/shared/ExportCsvButton"
 
 interface CommitLogProps {
   data: CommitRecord[]
   owner: string
   repo: string
   onOpenGuide: (section: GuideSectionId) => void
+  analyzedAt: string
+  historyTruncated: boolean
+  commitFilesTruncated: boolean
 }
 
 const PAGE_SIZE = 50
 
-export function CommitLog({ data, owner, repo, onOpenGuide }: CommitLogProps) {
+export function CommitLog({ data, owner, repo, onOpenGuide, analyzedAt, historyTruncated, commitFilesTruncated }: CommitLogProps) {
   const [search, setSearch] = useState("")
   const [bugOnly, setBugOnly] = useState(false)
   const [page, setPage] = useState(1)
@@ -50,6 +54,7 @@ export function CommitLog({ data, owner, repo, onOpenGuide }: CommitLogProps) {
             <p className="text-xs text-muted">
               Structured historical commit stream ({filtered.length.toLocaleString()} matches)
             </p>
+            <ExportCsvButton filename={`${repo}-commit-log.csv`} analyzedAt={analyzedAt} historyTruncated={historyTruncated} commitFilesTruncated={commitFilesTruncated} headers={["Hash", "Author", "Email", "Author date", "Subject", "Changed files", "Bug-fix keyword"]} rows={filtered.map(c => [c.hash,c.authorName,c.authorEmail,c.timestamp,c.message,c.files.map(f => f.path).join("; "),c.matchedBugFixKeyword])} />
           </div>
           <div className="flex items-center gap-2">
             <label className="flex items-center gap-1.5 text-xs text-muted cursor-pointer hover:text-primary transition-colors select-none mr-2">

@@ -1,5 +1,5 @@
 "use client"
-import { useCallback, useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import type { DashboardStreamMessage } from "@wot-git/types"
 import { useDashboard } from "@/hooks/useDashboard"
 import { Sidebar, NAV_GROUPS, groupForTab, type TabId } from "@/components/layout/Sidebar"
@@ -22,6 +22,8 @@ import { ProjectGuide } from "@/components/guide/ProjectGuide"
 import { FileEvidencePanel } from "@/components/panels/FileEvidencePanel"
 import { ScanCoverageNotice } from "@/components/panels/ScanCoverageNotice"
 import type { GuideSectionId } from "@/components/guide/guideTypes"
+import { downloadText, filterCommits, matchesPath, markdownSummary, type DashboardFilters } from "@/lib/dashboardExploration"
+import { ExportCsvButton } from "@/components/shared/ExportCsvButton"
 
 function MobileAnalysisNav({ activeTab, onSelectTab, isOpen }: { activeTab: TabId; onSelectTab: (tab: TabId) => void; isOpen: boolean }) {
   const [expandedGroup, setExpandedGroup] = useState(() => groupForTab(activeTab))
@@ -106,6 +108,9 @@ export default function DashboardPage({
   const [navigationOpen, setNavigationOpen] = useState(true)
   const [refreshKey, setRefreshKey] = useState(0)
   const [selectedFile, setSelectedFile] = useState<string | null>(null)
+  const [dateRange, setDateRange] = useState({ startDate: "", endDate: "" })
+  const [pathFilter, setPathFilter] = useState("")
+  const [selectedContributor, setSelectedContributor] = useState<string | null>(null)
   const [guideSection, setGuideSection] = useState<GuideSectionId>("how-to-read")
   const toggleNavigation = useCallback(() => setNavigationOpen(open => !open), [])
   const handleProgress = useCallback((message: DashboardStreamMessage) => {
@@ -142,6 +147,22 @@ export default function DashboardPage({
     setActiveTab("guide")
   }, [])
 
+  const filters: DashboardFilters = { ...dateRange, path: pathFilter }
+  const dashboardAnalysis = data?.analysis
+  const matchingCommits = useMemo(() => dashboardAnalysis ? filterCommits(dashboardAnalysis.commitLog, filters) : [], [dashboardAnalysis, dateRange, pathFilter])
+  const matchingCommitHashes = useMemo(() => new Set(matchingCommits.map(commit => commit.hash)), [matchingCommits])
+  const pathCommitFrequency = useMemo(() => {
+    if (!dashboardAnalysis || !pathFilter.trim()) return null
+    const counts = new Map<string, number>()
+    for (const commit of filterCommits(dashboardAnalysis.commitLog, { startDate: "", endDate: "", path: pathFilter })) {
+      const day = commit.timestamp.slice(0, 10)
+      counts.set(day, (counts.get(day) ?? 0) + 1)
+    }
+    return [...counts].sort(([a], [b]) => a.localeCompare(b))
+  }, [dashboardAnalysis, pathFilter])
+  const fileMatches = useCallback((path: string) => matchesPath(path, pathFilter), [pathFilter])
+  const exportMarkdown = useCallback(() => { if (dashboardAnalysis) downloadText(`${repo}-wot-git-report.md`, markdownSummary(dashboardAnalysis), "text/markdown;charset=utf-8") }, [dashboardAnalysis, repo])
+
   if (isViewLoading) {
     return (
       <DashboardLoading
@@ -172,6 +193,7 @@ export default function DashboardPage({
           <RepoHeader owner={owner} repo={repo} navigationOpen={navigationOpen} onToggleNavigation={toggleNavigation} onRefresh={refreshDashboard} />
           <MobileAnalysisNav activeTab={activeTab} onSelectTab={setActiveTab} isOpen={navigationOpen} />
           <main className="mx-auto w-full max-w-7xl flex-1 space-y-6 p-6">
+            <div className="flex justify-end"><ExportCsvButton filename={`${repo}-health.csv`} analyzedAt={data.analysis.analyzedAt} historyTruncated={data.analysis.scan.historyTruncated} commitFilesTruncated={data.analysis.scan.commitFilesTruncated} headers={["Record type", "Category", "Status", "Score", "Title", "Path"]} rows={[...data.health.categories.map(c => ["category",c.label,c.status,c.score ?? "N/A",c.summary,""]), ...data.health.findings.map(f => ["finding",f.category,f.severity,"",f.title,f.path ?? ""])]} /></div>
             <ScanCoverageNotice analysis={data.analysis} health={data.health} onOpenGuide={openGuide} />
             <RepoHealthPanel
               data={data.health}
@@ -205,6 +227,7 @@ export default function DashboardPage({
 
   const analysis = data.analysis
   const totalBugFixCommits = analysis.commitLog.filter((c) => c.isBugFix).length
+  const filteredCommitSizes = analysis.commitSizes.filter(size => matchingCommitHashes.has(size.hash))
 
   return (
     <div className="flex min-h-screen bg-bg">
@@ -222,39 +245,55 @@ export default function DashboardPage({
         />
         <MobileAnalysisNav activeTab={activeTab} onSelectTab={setActiveTab} isOpen={navigationOpen} />
         <main className="flex-1 p-6 space-y-6 max-w-7xl w-full mx-auto">
+          <section aria-label="Shared report filters" className="flex flex-wrap items-end gap-3 border border-border bg-surface/40 p-3">
+            <label className="flex flex-col gap-1 text-[11px] text-muted">From<input aria-label="Shared history start date" type="date" value={dateRange.startDate} max={dateRange.endDate || undefined} onChange={e => setDateRange(current => ({ ...current, startDate: e.target.value }))} className="border border-border bg-bg px-2 py-1 text-xs text-primary" /></label>
+            <label className="flex flex-col gap-1 text-[11px] text-muted">To<input aria-label="Shared history end date" type="date" value={dateRange.endDate} min={dateRange.startDate || undefined} onChange={e => setDateRange(current => ({ ...current, endDate: e.target.value }))} className="border border-border bg-bg px-2 py-1 text-xs text-primary" /></label>
+            <label className="flex min-w-[190px] flex-col gap-1 text-[11px] text-muted">File path contains<input aria-label="Shared file path filter" type="search" placeholder="e.g. src/api" value={pathFilter} onChange={e => setPathFilter(e.target.value)} className="border border-border bg-bg px-2 py-1 text-xs text-primary" /></label>
+            {(dateRange.startDate || dateRange.endDate || pathFilter) && <button type="button" onClick={() => { setDateRange({ startDate: "", endDate: "" }); setPathFilter("") }} className="border border-border px-2 py-1 text-xs text-muted hover:text-primary">Clear filters</button>}
+            <p className="basis-full text-[11px] text-muted">Date filters narrow commit-level records. Path filters narrow matching rows. Hotspot, churn, ownership, and co-change calculations remain full-scan results.</p>
+          </section>
+          <div className="flex flex-wrap justify-end gap-2">
+            {activeTab === "overview" && <button type="button" onClick={exportMarkdown} className="border border-border px-3 py-1.5 text-xs text-muted hover:text-primary">Download Markdown report</button>}
+          </div>
           <ScanCoverageNotice analysis={analysis} health={data.health} onOpenGuide={openGuide} />
-          {selectedFile && <FileEvidencePanel path={selectedFile} analysis={analysis} onClose={() => setSelectedFile(null)} onInspect={setSelectedFile} onSelectTab={setActiveTab} onOpenGuide={openGuide} />}
+          {selectedFile && <FileEvidencePanel path={selectedFile} analysis={analysis} startDate={dateRange.startDate} endDate={dateRange.endDate} pathFilter={pathFilter} onClose={() => setSelectedFile(null)} onInspect={setSelectedFile} onSelectTab={setActiveTab} onOpenGuide={openGuide} />}
           {/* Active Tab Panel */}
-          {activeTab === "overview" && <RepositoryOverview data={data} onSelectTab={setActiveTab} onOpenGuide={openGuide} />}
-          {activeTab === "hotspots" && <HotspotChart data={analysis.hotspots} onInspect={setSelectedFile} selectedFile={selectedFile} onOpenGuide={openGuide} />}
+          {activeTab === "overview" && <RepositoryOverview data={data} onSelectTab={setActiveTab} onInspect={setSelectedFile} onOpenGuide={openGuide} pathFilter={pathFilter} onSelectContributor={identity => { setSelectedContributor(identity); setActiveTab("ownership") }} />}
+          {activeTab === "hotspots" && <HotspotChart data={analysis.hotspots.filter(x => fileMatches(x.path))} onInspect={setSelectedFile} selectedFile={selectedFile} onOpenGuide={openGuide} repo={repo} analyzedAt={analysis.analyzedAt} historyTruncated={analysis.scan.historyTruncated} commitFilesTruncated={analysis.scan.commitFilesTruncated} />}
           {activeTab === "bugfiles" && (
             <BugFilesTable
-              data={analysis.bugFiles}
+              data={analysis.bugFiles.filter(x => fileMatches(x.path))}
               totalBugFixCommits={totalBugFixCommits}
               owner={owner}
               repo={repo}
               onInspect={setSelectedFile}
               selectedFile={selectedFile}
               onOpenGuide={openGuide}
+              analyzedAt={analysis.analyzedAt}
+              historyTruncated={analysis.scan.historyTruncated}
+              commitFilesTruncated={analysis.scan.commitFilesTruncated}
             />
           )}
-          {activeTab === "commits" && <CommitActivity data={analysis.commits} onOpenGuide={openGuide} />}
+          {activeTab === "commits" && <CommitActivity data={pathCommitFrequency ? pathCommitFrequency.map(([date,count]) => ({ date,count })) : analysis.commits} commitLog={analysis.commitLog} owner={owner} repo={repo} historyTruncated={analysis.scan.historyTruncated} commitFilesTruncated={analysis.scan.commitFilesTruncated} onInspect={setSelectedFile} onOpenGuide={openGuide} startDate={dateRange.startDate} endDate={dateRange.endDate} onDateRangeChange={(startDate,endDate) => setDateRange(current => ({ ...current,startDate,endDate }))} pathFilter={pathFilter} analyzedAt={analysis.analyzedAt} comparisonPartial={analysis.scan.historyTruncated || analysis.scan.commitFilesTruncated} />}
           {activeTab === "commitsizes" && (
             <CommitSizes
-              data={analysis.commitSizes}
+              data={filteredCommitSizes}
               commitLog={analysis.commitLog}
               owner={owner}
               repo={repo}
               onOpenGuide={openGuide}
+              analyzedAt={analysis.analyzedAt}
+              historyTruncated={analysis.scan.historyTruncated}
+              commitFilesTruncated={analysis.scan.commitFilesTruncated}
             />
           )}
-          {activeTab === "churn" && <ChurnTable data={analysis.churn} onInspect={setSelectedFile} selectedFile={selectedFile} onOpenGuide={openGuide} />}
+          {activeTab === "churn" && <ChurnTable data={analysis.churn.filter(x => fileMatches(x.path))} onInspect={setSelectedFile} selectedFile={selectedFile} onOpenGuide={openGuide} repo={repo} analyzedAt={analysis.analyzedAt} historyTruncated={analysis.scan.historyTruncated} commitFilesTruncated={analysis.scan.commitFilesTruncated} />}
           {activeTab === "commitlog" && (
-            <CommitLog data={analysis.commitLog} owner={owner} repo={repo} onOpenGuide={openGuide} />
+            <CommitLog data={matchingCommits} owner={owner} repo={repo} onOpenGuide={openGuide} analyzedAt={analysis.analyzedAt} historyTruncated={analysis.scan.historyTruncated} commitFilesTruncated={analysis.scan.commitFilesTruncated} />
           )}
-          {activeTab === "ownership" && <OwnershipTable data={analysis.ownership} onInspect={setSelectedFile} selectedFile={selectedFile} onOpenGuide={openGuide} />}
-          {activeTab === "cochange" && <CoChangeTable data={analysis.cochange} onInspect={setSelectedFile} selectedFile={selectedFile} onOpenGuide={openGuide} />}
-          {activeTab === "outline" && <OutlineTree data={analysis.outline} onInspect={setSelectedFile} selectedFile={selectedFile} onOpenGuide={openGuide} />}
+          {activeTab === "ownership" && <OwnershipTable data={analysis.ownership.filter(x => fileMatches(x.path))} selectedContributor={selectedContributor} onClearContributor={() => setSelectedContributor(null)} onInspect={setSelectedFile} selectedFile={selectedFile} onOpenGuide={openGuide} repo={repo} analyzedAt={analysis.analyzedAt} historyTruncated={analysis.scan.historyTruncated} commitFilesTruncated={analysis.scan.commitFilesTruncated} />}
+          {activeTab === "cochange" && <CoChangeTable data={analysis.cochange.filter(x => fileMatches(x.fileA) || fileMatches(x.fileB))} onInspect={setSelectedFile} selectedFile={selectedFile} onOpenGuide={openGuide} repo={repo} analyzedAt={analysis.analyzedAt} historyTruncated={analysis.scan.historyTruncated} commitFilesTruncated={analysis.scan.commitFilesTruncated} />}
+          {activeTab === "outline" && <OutlineTree data={Object.fromEntries(Object.entries(analysis.outline).filter(([path]) => fileMatches(path)))} onInspect={setSelectedFile} selectedFile={selectedFile} onOpenGuide={openGuide} repo={repo} analyzedAt={analysis.analyzedAt} historyTruncated={analysis.scan.historyTruncated} commitFilesTruncated={analysis.scan.commitFilesTruncated} />}
         </main>
       </div>
     </div>

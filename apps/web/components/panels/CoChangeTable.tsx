@@ -8,12 +8,14 @@ import { FileInspectButton } from "@/components/shared/FileInspectButton"
 import { InfoTip } from "@/components/shared/InfoTip"
 import type { GuideSectionId } from "@/components/guide/guideTypes"
 import { Search, Link2 } from "lucide-react"
+import { ExportCsvButton } from "@/components/shared/ExportCsvButton"
 
 interface CoChangeTableProps {
   data: CoChange[]
   onInspect?: (path: string) => void
   selectedFile?: string | null
   onOpenGuide: (section: GuideSectionId) => void
+  analyzedAt: string; historyTruncated: boolean; commitFilesTruncated: boolean; repo: string
 }
 
 const EXCLUDED_EXTENSIONS = new Set([
@@ -42,7 +44,7 @@ function isExcludedFile(path: string): boolean {
   return false
 }
 
-export function CoChangeTable({ data, onInspect, selectedFile, onOpenGuide }: CoChangeTableProps) {
+export function CoChangeTable({ data, onInspect, selectedFile, onOpenGuide, analyzedAt, historyTruncated, commitFilesTruncated, repo }: CoChangeTableProps) {
   const [search, setSearch] = useState("")
   const [limit, setLimit] = useState(50)
 
@@ -81,6 +83,7 @@ export function CoChangeTable({ data, onInspect, selectedFile, onOpenGuide }: Co
             />
           </div>
         </div>
+        <div className="mt-2"><ExportCsvButton filename={`${repo}-co-change.csv`} analyzedAt={analyzedAt} historyTruncated={historyTruncated} commitFilesTruncated={commitFilesTruncated} headers={["File A", "File B", "Co-change commits"]} rows={filtered.map(pair => [pair.fileA,pair.fileB,pair.count])} /></div>
       </CardHeader>
       <CardContent className="p-0">
         <div className="overflow-x-auto">

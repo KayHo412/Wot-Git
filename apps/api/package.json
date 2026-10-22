@@ -5,7 +5,7 @@
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
-    "test": "node --import tsx --test src/services/repoHealth.test.ts src/services/gitHistory.test.ts src/services/metricParsing.test.ts src/services/analysis.test.ts src/utils/scan.test.ts",
+    "test": "node --import tsx --test src/services/repoHealth.test.ts src/services/gitHistory.test.ts src/services/metricParsing.test.ts src/services/analysis.test.ts src/utils/scan.test.ts ../web/lib/commitActivity.test.ts ../web/lib/repositoryEvidence.test.ts ../web/lib/dashboardExploration.test.ts",
     "benchmark": "node --import tsx benchmarks/benchmark-signals.ts",
     "lint": "eslint src"
   },
