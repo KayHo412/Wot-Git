@@ -39,6 +39,7 @@ export function InfoTip({ term, description, guideSection, onOpenGuide }: InfoTi
       onMouseLeave={() => setOpen(false)}
       onKeyDown={event => {
         if (event.key === "Escape") {
+          event.stopPropagation()
           setOpen(false)
           suppressFocusOpen.current = true
           triggerRef.current?.focus()

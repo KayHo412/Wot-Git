@@ -22,10 +22,12 @@ interface FileEvidencePanelProps {
   startDate: string
   endDate: string
   pathFilter: string
+  isMobileDrawer: boolean
 }
 
-export function FileEvidencePanel({ path, analysis, onClose, onInspect, onSelectTab, onOpenGuide, startDate, endDate, pathFilter }: FileEvidencePanelProps) {
+export function FileEvidencePanel({ path, analysis, onClose, onInspect, onSelectTab, onOpenGuide, startDate, endDate, pathFilter, isMobileDrawer }: FileEvidencePanelProps) {
   const panelRef = useRef<HTMLElement>(null)
+  const closeButtonRef = useRef<HTMLButtonElement>(null)
   const previousPath = useRef<string | null>(null)
   const [announcement, setAnnouncement] = useState("")
   const [selectedMonth, setSelectedMonth] = useState("")
@@ -34,39 +36,54 @@ export function FileEvidencePanel({ path, analysis, onClose, onInspect, onSelect
     const switched = previousPath.current !== null && previousPath.current !== path
     setAnnouncement(switched ? `Inspection switched to ${path}` : `Now inspecting ${path}`)
     previousPath.current = path
+    setSelectedMonth("")
+    panelRef.current?.scrollTo({ top: 0, behavior: "auto" })
+  }, [path])
 
-    const alignPanelBelowNavigation = () => {
-      const panel = panelRef.current
-      if (!panel) return
+  useEffect(() => {
+    if (!isMobileDrawer) return
 
-      const header = document.querySelector<HTMLElement>("header.sticky")
-      const mobileNav = document.getElementById("mobile-analysis-nav")
-      const stickyBottom = Math.max(
-        header?.getBoundingClientRect().bottom ?? 0,
-        mobileNav?.getClientRects().length ? mobileNav.getBoundingClientRect().bottom : 0,
-      )
-      const panelTop = panel.getBoundingClientRect().top
-      const visible = panelTop < window.innerHeight && panel.getBoundingClientRect().bottom > 0
-      const targetTop = stickyBottom + 16
-      if (visible && Math.abs(panelTop - targetTop) > 1) {
-        window.scrollBy(0, panelTop - targetTop)
+    const previouslyFocused = document.activeElement as HTMLElement | null
+    const previousOverflow = document.body.style.overflow
+    const panel = panelRef.current
+    document.body.style.overflow = "hidden"
+    closeButtonRef.current?.focus()
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault()
+        onClose()
+        return
+      }
+      if (event.key !== "Tab" || !panel) return
+
+      const focusable = [...panel.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      )].filter(element => element.getAttribute("aria-hidden") !== "true")
+      if (!focusable.length) {
+        event.preventDefault()
+        panel.focus()
+        return
+      }
+
+      const first = focusable[0]
+      const last = focusable[focusable.length - 1]
+      if (event.shiftKey && (document.activeElement === first || !panel.contains(document.activeElement))) {
+        event.preventDefault()
+        last.focus()
+      } else if (!event.shiftKey && (document.activeElement === last || !panel.contains(document.activeElement))) {
+        event.preventDefault()
+        first.focus()
       }
     }
 
-    panelRef.current?.scrollIntoView({ block: "start", behavior: "auto" })
-    const frame = window.requestAnimationFrame(alignPanelBelowNavigation)
-
-    const resizeObserver = new ResizeObserver(alignPanelBelowNavigation)
-    const header = document.querySelector<HTMLElement>("header.sticky")
-    const mobileNav = document.getElementById("mobile-analysis-nav")
-    if (header) resizeObserver.observe(header)
-    if (mobileNav) resizeObserver.observe(mobileNav)
-
+    document.addEventListener("keydown", handleKeyDown)
     return () => {
-      window.cancelAnimationFrame(frame)
-      resizeObserver.disconnect()
+      document.removeEventListener("keydown", handleKeyDown)
+      document.body.style.overflow = previousOverflow
+      if (previouslyFocused?.isConnected) previouslyFocused.focus()
     }
-  }, [path])
+  }, [isMobileDrawer, onClose])
 
   const churn = analysis.churn.find(item => item.path === path)
   const hotspot = analysis.hotspots.find(item => item.path === path)
@@ -85,8 +102,8 @@ export function FileEvidencePanel({ path, analysis, onClose, onInspect, onSelect
     .slice(0, 5)
 
   return (
-    <section ref={panelRef} aria-labelledby="file-evidence-title" className="border-l-2 border-l-accent border-y border-r border-border bg-surface/40">
-      <header className="flex items-start justify-between gap-4 border-b border-border px-4 py-3">
+    <section ref={panelRef} role={isMobileDrawer ? "dialog" : "complementary"} aria-modal={isMobileDrawer || undefined} aria-label={isMobileDrawer ? undefined : "File inspection"} aria-labelledby="file-evidence-title" tabIndex={isMobileDrawer ? -1 : undefined} className="h-full min-w-0 overflow-y-auto border border-border border-l-2 border-l-accent bg-bg xl:bg-surface/40">
+      <header className="sticky top-0 z-10 flex items-start justify-between gap-3 border-b border-border bg-bg px-4 py-4 xl:bg-surface">
         <div className="min-w-0">
           <p className="text-[10px] font-semibold uppercase tracking-wider text-accent">File inspection</p>
           <h2 id="file-evidence-title" className="mt-1 flex items-center gap-2 text-sm font-semibold text-primary">Currently inspecting <InfoTip term="File evidence" description="A combined view of this file’s available Git-history signals. Missing items mean the signal was not present in the returned analysis; they do not imply that no activity ever occurred." guideSection="how-to-read" onOpenGuide={onOpenGuide} /></h2>
@@ -94,32 +111,32 @@ export function FileEvidencePanel({ path, analysis, onClose, onInspect, onSelect
           <p role="status" aria-live="polite" aria-atomic="true" className="mt-2 text-xs font-medium text-accent">{announcement}</p>
           <p className="mt-2 text-xs text-muted">Observed Git-history signals for investigation. These are not a bug verdict or a recommendation to change the file.</p>
         </div>
-        <button type="button" onClick={onClose} aria-label="Close file evidence" className="shrink-0 p-1 text-muted hover:text-primary focus-visible:outline focus-visible:outline-1 focus-visible:outline-accent">
+        <button ref={closeButtonRef} type="button" onClick={onClose} aria-label="Close file evidence" className="shrink-0 p-1 text-muted hover:text-primary focus-visible:outline focus-visible:outline-1 focus-visible:outline-accent">
           <X size={16} />
         </button>
       </header>
 
-      <div className="grid gap-px bg-border sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-px bg-border">
         <Evidence label="Commits observed" value={churn ? `${churn.churnCount}` : "No data"} detail={churn ? `Last touched ${churn.lastTouched === "unknown" ? "date unknown" : formatDate(churn.lastTouched)}` : "Outside the analyzed file set"} onClick={() => onSelectTab("churn")} />
         <Evidence label="Relative hotspot" value={hotspot ? hotspot.hotspotScore.toFixed(4) : "No data"} detail={hotspot ? `Change ${hotspot.churnScore.toFixed(4)} · size ${hotspot.sizeScore.toFixed(4)}` : "Outside the analyzed file set"} onClick={() => onSelectTab("hotspots")} />
         <Evidence label="Contributors" value={ownership ? `${ownership.authors.length}` : "No data"} detail={ownership ? `Dominant: ${ownership.dominantAuthor}${ownership.isBusFactor ? " · one recorded author" : ""}` : "No ownership data"} onClick={() => onSelectTab("ownership")} />
         <Evidence label="Bug-fix-associated commits" value={bugFile ? `${bugFile.bugFixCount}` : "0"} detail="Commit subjects matched the bug-fix keyword heuristic" onClick={() => onSelectTab("bugfiles")} />
       </div>
 
-      <div className="border-t border-border px-4 py-3">
+      <div className="border-t border-border px-4 py-4">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
           <h3 className="text-xs font-semibold text-primary">Monthly file activity</h3>
           <span className="text-[11px] text-muted">12 months ending {analysis.analyzedAt.slice(0, 7)}</span>
         </div>
-        <div className="mt-2 grid grid-cols-4 gap-1 sm:grid-cols-6 lg:grid-cols-12" role="group" aria-label="Select a month to filter file commit evidence">
+        <div className="mt-3 grid grid-cols-6 gap-1.5" role="group" aria-label="Select a month to filter file commit evidence">
           {monthlyActivity.map(point => <button key={point.month} type="button" aria-pressed={selectedMonth === point.month} onClick={() => setSelectedMonth(current => current === point.month ? "" : point.month)} className={`border px-1 py-2 text-center focus-visible:outline focus-visible:outline-1 focus-visible:outline-accent ${selectedMonth === point.month ? "border-accent bg-accent/10 text-accent" : "border-border text-muted hover:bg-surface"}`} title={`${point.month}: ${point.count} commits`}><span className="block text-[10px]">{point.month.slice(5)}</span><span className="mt-1 block font-mono text-xs">{point.count}</span></button>)}
         </div>
         <div className="mt-4 flex flex-wrap items-center justify-between gap-2"><h3 className="text-xs font-semibold text-primary">Commits that changed this file</h3><span className="text-[11px] text-muted">{displayedCommits.length} shown · {filteredSupportingCommits.length} matching</span></div>
         {(selectedMonth || startDate || endDate || pathFilter) && <button type="button" onClick={() => setSelectedMonth("")} className="mt-1 text-[11px] text-accent underline hover:no-underline">Clear month selection {selectedMonth ? `(${selectedMonth})` : "and use shared filters"}</button>}
-        {displayedCommits.length ? <ul className="mt-2 divide-y divide-border/60">
+        {displayedCommits.length ? <ul className="mt-3 divide-y divide-border/60">
           {displayedCommits.map(commit => {
             const file = commit.files.find(item => item.path === path)!
-            return <li key={commit.hash} className="flex flex-col gap-1 py-2 text-xs sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+            return <li key={commit.hash} className="flex min-w-0 flex-col gap-1.5 py-3 text-xs">
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                   <a href={`${analysis.repoUrl.replace(/\/+$/, "")}/commit/${commit.hash}`} target="_blank" rel="noreferrer" className="font-mono text-accent underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-1 focus-visible:outline-accent">{commit.hash.slice(0, 7)}</a>
@@ -128,7 +145,7 @@ export function FileEvidencePanel({ path, analysis, onClose, onInspect, onSelect
                 </div>
                 <p className="mt-1 break-words text-primary">{commit.message || "(no subject)"}</p>
               </div>
-              <span className="shrink-0 font-mono text-[11px] text-muted">+{file.insertions} / −{file.deletions}</span>
+              <span className="font-mono text-[11px] text-muted">File changes: +{file.insertions} / −{file.deletions}</span>
             </li>
           })}
         </ul> : <p className="mt-2 text-xs text-muted">No matching commit records were returned for this file.</p>}
@@ -158,9 +175,9 @@ export function FileEvidencePanel({ path, analysis, onClose, onInspect, onSelect
 
 function Evidence({ label, value, detail, onClick }: { label: string; value: string; detail: string; onClick: () => void }) {
   return <div className="min-w-0 bg-bg px-4 py-3">
-    <div className="text-[11px] uppercase tracking-wide text-muted">{label}</div>
-    <div className="mt-1 font-mono text-base font-semibold text-primary">{value}</div>
-    <p className="mt-1 min-h-8 text-[11px] leading-4 text-muted">{detail}</p>
+    <div className="break-words text-[11px] uppercase tracking-wide text-muted">{label}</div>
+    <div className="mt-1 break-words font-mono text-base font-semibold text-primary">{value}</div>
+    <p className="mt-1 min-h-8 break-words text-[11px] leading-4 text-muted">{detail}</p>
     <button type="button" onClick={onClick} className="mt-1 text-[11px] text-accent underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-1 focus-visible:outline-accent">Open analysis</button>
   </div>
 }
