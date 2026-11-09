@@ -23,7 +23,7 @@ export function calculateHotspotScores(churn: FileChurn[], sizes: number[]): Hot
   })).sort((a, b) => b.hotspotScore - a.hotspotScore || a.path.localeCompare(b.path))
 }
 
-export async function runHotspot(repoPath: string, churn: FileChurn[], signal?: AbortSignal): Promise<{ items: Hotspot[]; filesTruncated: boolean }> {
+export async function runHotspot(repoPath: string, churn: FileChurn[], signal?: AbortSignal, maxFiles = ANALYSIS_MAX_FILES): Promise<{ items: Hotspot[]; filesTruncated: boolean }> {
   if (churn.length === 0) return { items: [], filesTruncated: false }
 
   // Bound concurrent filesystem operations while measuring the selected file set.
@@ -44,5 +44,5 @@ export async function runHotspot(repoPath: string, churn: FileChurn[], signal?: 
   throwIfAborted(signal)
 
   const items = calculateHotspotScores(churn, sizes)
-  return { items, filesTruncated: churn.length > ANALYSIS_MAX_FILES }
+  return { items, filesTruncated: churn.length > maxFiles }
 }

@@ -1,0 +1,33 @@
+{
+  "repos": [
+    {
+      "name": "facebook/react",
+      "url": "https://github.com/facebook/react.git",
+      "commit": "76baa3b5434fad315ece9cfd4d20d7a8d6c34a25"
+    },
+    {
+      "name": "pallets/flask",
+      "url": "https://github.com/pallets/flask.git",
+      "commit": "49943b5a94413a530761350f04e896f76e8d620e"
+    },
+    {
+      "name": "microsoft/vscode",
+      "url": "https://github.com/microsoft/vscode.git",
+      "commit": "578572bdc747af9238b50db3843ac8caeb27eb8d"
+    },
+    {
+      "name": "spring-projects/spring-boot",
+      "url": "https://github.com/spring-projects/spring-boot.git",
+      "commit": "c1eb7d54a7149da16bc5d632d7464dba3b11b88e"
+    },
+    {
+      "name": "etcd-io/etcd",
+      "url": "https://github.com/etcd-io/etcd.git",
+      "commit": "092167b24e534f52c5d51db6635701aea8f41954"
+    }
+  ],
+  "windowCommits": 10000,
+  "trainFraction": 0.7,
+  "topFraction": 0.2,
+  "minFixCommits": [1, 2]
+}

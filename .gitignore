@@ -6,6 +6,9 @@ out
 coverage
 .cache
 .next
+experiment-results
+.eslintcache
+.stylelintcache
 .env
 .env.local
 .env.*

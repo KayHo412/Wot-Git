@@ -20,7 +20,7 @@ export interface GitHistoryResult {
   cochangeTruncated: boolean
 }
 
-function parseNameOnlyHistory(raw: string, maxCommits: number): {
+function parseNameOnlyHistory(raw: string, maxCommits: number, maxFiles: number): {
   commits: ChangedCommit[]
   churnByPath: Map<string, { churnCount: number; lastTouched: string }>
   historyTruncated: boolean
@@ -59,16 +59,17 @@ function parseNameOnlyHistory(raw: string, maxCommits: number): {
     else cochangeTruncated = true
     const existing = churnByPath.get(token)
     if (existing) existing.churnCount += 1
-    else if (churnByPath.size < ANALYSIS_MAX_FILES) churnByPath.set(token, { churnCount: 1, lastTouched: current.date || 'unknown' })
+    else if (churnByPath.size < maxFiles) churnByPath.set(token, { churnCount: 1, lastTouched: current.date || 'unknown' })
     else filesTruncated = true
   }
   return { commits: records, churnByPath, historyTruncated, filesTruncated, cochangeTruncated }
 }
 
-export async function readGitHistory(repoPath: string, maxCommits = ANALYSIS_MAX_COMMITS, signal?: AbortSignal): Promise<GitHistoryResult> {
+export async function readGitHistory(repoPath: string, maxCommits = ANALYSIS_MAX_COMMITS, signal?: AbortSignal, maxFiles = ANALYSIS_MAX_FILES): Promise<GitHistoryResult> {
+  if (!Number.isSafeInteger(maxFiles) || maxFiles < 1) throw new RangeError('maxFiles must be a positive safe integer')
   const git = scanGit(repoPath, signal)
   const raw = await git.raw(['log', '-z', `-${maxCommits + 1}`, '--format=%x1e%H%x00%ad', '--date=short', '--name-only'])
-  const parsed = parseNameOnlyHistory(raw, maxCommits)
+  const parsed = parseNameOnlyHistory(raw, maxCommits, maxFiles)
   const orderedFiles = [...parsed.churnByPath.entries()].sort((a, b) =>
     b[1].churnCount - a[1].churnCount || a[0].localeCompare(b[0])
   )
@@ -81,7 +82,7 @@ export async function readGitHistory(repoPath: string, maxCommits = ANALYSIS_MAX
     historyTruncated: parsed.historyTruncated,
     filesAnalyzed: churn.length,
     filesTruncated: parsed.filesTruncated,
-    totalFilesObserved: parsed.filesTruncated ? ANALYSIS_MAX_FILES + 1 : orderedFiles.length,
+    totalFilesObserved: parsed.filesTruncated ? maxFiles + 1 : orderedFiles.length,
     cochangeTruncated: parsed.cochangeTruncated,
   }
 }

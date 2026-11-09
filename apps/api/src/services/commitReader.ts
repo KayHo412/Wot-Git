@@ -7,7 +7,7 @@ import { scanGit, throwIfAborted } from '../utils/scan'
 
 /**
  * Keyword-based heuristic for bug-fix commit classification.
- * Case-insensitive. Matches whole words from:
+ * Case-insensitive. Matches whole-word bug/hotfix and inflected forms plus:
  * fix, bug, defect, error, issue, patch, repair, resolve, close, crash
  *
  * Reference: Sliwerski et al. (2005), Fischer et al. (2003)
