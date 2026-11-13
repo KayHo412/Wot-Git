@@ -8,6 +8,7 @@
     "test": "node --import tsx --test src/services/repoHealth.test.ts src/services/gitHistory.test.ts src/services/metricParsing.test.ts src/services/analysis.test.ts src/utils/scan.test.ts src/utils/bugFix.test.ts src/experiment/run.test.ts ../web/lib/commitActivity.test.ts ../web/lib/repositoryEvidence.test.ts ../web/lib/dashboardExploration.test.ts",
     "benchmark": "node --import tsx benchmarks/benchmark-signals.ts",
     "experiment": "node --import tsx src/experiment/run.ts",
+    "experiment:extras": "node --import tsx src/experiment/extras.ts",
     "lint": "eslint src"
   },
   "dependencies": {

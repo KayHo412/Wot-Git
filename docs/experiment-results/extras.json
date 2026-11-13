@@ -1,0 +1,892 @@
+[
+  {
+    "name": "facebook/react",
+    "commit": "76baa3b5434fad315ece9cfd4d20d7a8d6c34a25",
+    "window": {
+      "commits": 10000,
+      "bugFixCommits": 1828,
+      "bugFixShare": 0.1828,
+      "commitsWithoutFiles": 49,
+      "commitsWithoutFilesShare": 0.0049,
+      "firstWords": [
+        [
+          "Add",
+          519
+        ],
+        [
+          "[compiler]",
+          476
+        ],
+        [
+          "[DevTools]",
+          432
+        ],
+        [
+          "Fix",
+          419
+        ],
+        [
+          "Remove",
+          378
+        ],
+        [
+          "[Flight]",
+          360
+        ]
+      ],
+      "start": "2019-05-29",
+      "cutoff": "2024-05-25",
+      "end": "2026-10-31",
+      "trainCount": 7000,
+      "evaluationCount": 3000
+    },
+    "universe": {
+      "n": 10000,
+      "b": 417,
+      "truncated": true,
+      "predicted": 2000,
+      "truePositive": 315
+    },
+    "auc": 0.8761512130168556,
+    "bugFixChanges": {
+      "total": 1095,
+      "inPredicted": 959,
+      "share": 0.8757990867579909
+    },
+    "testFiles": {
+      "shareInPredicted": 0.454,
+      "shareInAll": 0.7323,
+      "bugShareAmongPredictedTests": 0.09140969162995595,
+      "bugShareAmongOtherPredicted": 0.21245421245421245
+    },
+    "topExtensionsInPredicted": [
+      [
+        ".js",
+        1037
+      ],
+      [
+        ".snap",
+        553
+      ],
+      [
+        ".ts",
+        286
+      ],
+      [
+        ".rs",
+        74
+      ],
+      [
+        ".tsx",
+        17
+      ]
+    ],
+    "topDirectoriesInPredicted": [
+      [
+        "compiler/crates",
+        389
+      ],
+      [
+        "compiler/forget",
+        377
+      ],
+      [
+        "compiler/packages",
+        187
+      ],
+      [
+        "packages/react-dom",
+        186
+      ],
+      [
+        "packages/react-devtools-shared",
+        134
+      ]
+    ],
+    "underSrcVsInPredicted": 0,
+    "topFiles": [
+      {
+        "path": "packages/shared/forks/ReactFeatureFlags.www.js",
+        "fixCommits": 2,
+        "churn": 325,
+        "score": 0.5022,
+        "bugAssociated": true
+      },
+      {
+        "path": "compiler/apps/playground/public/graphvizlib.wasm",
+        "fixCommits": 0,
+        "churn": 1,
+        "score": 0.5,
+        "bugAssociated": false
+      },
+      {
+        "path": "packages/shared/ReactFeatureFlags.js",
+        "fixCommits": 0,
+        "churn": 303,
+        "score": 0.4718,
+        "bugAssociated": false
+      },
+      {
+        "path": "packages/shared/forks/ReactFeatureFlags.native-fb.js",
+        "fixCommits": 1,
+        "churn": 291,
+        "score": 0.4498,
+        "bugAssociated": true
+      },
+      {
+        "path": "packages/shared/forks/ReactFeatureFlags.test-renderer.www.js",
+        "fixCommits": 0,
+        "churn": 285,
+        "score": 0.4403,
+        "bugAssociated": false
+      },
+      {
+        "path": "packages/shared/forks/ReactFeatureFlags.test-renderer.js",
+        "fixCommits": 0,
+        "churn": 280,
+        "score": 0.4328,
+        "bugAssociated": false
+      },
+      {
+        "path": "packages/shared/forks/ReactFeatureFlags.native-oss.js",
+        "fixCommits": 0,
+        "churn": 274,
+        "score": 0.4243,
+        "bugAssociated": false
+      },
+      {
+        "path": "packages/react-reconciler/src/ReactFiberWorkLoop.js",
+        "fixCommits": 17,
+        "churn": 195,
+        "score": 0.3769,
+        "bugAssociated": true
+      },
+      {
+        "path": "packages/react-dom/src/__tests__/ReactDOMFizzServer-test.js",
+        "fixCommits": 7,
+        "churn": 162,
+        "score": 0.3702,
+        "bugAssociated": true
+      },
+      {
+        "path": "packages/react-server/src/ReactFizzServer.js",
+        "fixCommits": 12,
+        "churn": 172,
+        "score": 0.3463,
+        "bugAssociated": true
+      }
+    ]
+  },
+  {
+    "name": "pallets/flask",
+    "commit": "49943b5a94413a530761350f04e896f76e8d620e",
+    "window": {
+      "commits": 5566,
+      "bugFixCommits": 1295,
+      "bugFixShare": 0.23266259432267336,
+      "commitsWithoutFiles": 1735,
+      "commitsWithoutFilesShare": 0.31171397772188286,
+      "firstWords": [
+        [
+          "Merge",
+          1592
+        ],
+        [
+          "Added",
+          285
+        ],
+        [
+          "Fix",
+          256
+        ],
+        [
+          "Fixed",
+          183
+        ],
+        [
+          "Add",
+          180
+        ],
+        [
+          "Bump",
+          166
+        ]
+      ],
+      "start": "2010-04-06",
+      "cutoff": "2020-05-23",
+      "end": "2026-10-30",
+      "trainCount": 3896,
+      "evaluationCount": 1670
+    },
+    "universe": {
+      "n": 221,
+      "b": 31,
+      "truncated": false,
+      "predicted": 45,
+      "truePositive": 21
+    },
+    "auc": 0.8797113752122241,
+    "bugFixChanges": {
+      "total": 165,
+      "inPredicted": 148,
+      "share": 0.896969696969697
+    },
+    "testFiles": {
+      "shareInPredicted": 0.3111111111111111,
+      "shareInAll": 0.3936651583710407,
+      "bugShareAmongPredictedTests": 0.6428571428571429,
+      "bugShareAmongOtherPredicted": 0.3870967741935484
+    },
+    "topExtensionsInPredicted": [
+      [
+        ".py",
+        40
+      ],
+      [
+        ".rst",
+        2
+      ],
+      [
+        ".ini",
+        1
+      ],
+      [
+        ".yml",
+        1
+      ],
+      [
+        "(none)",
+        1
+      ]
+    ],
+    "topDirectoriesInPredicted": [
+      [
+        "src/flask",
+        10
+      ],
+      [
+        "flask/testsuite",
+        2
+      ],
+      [
+        ".travis.yml",
+        1
+      ],
+      [
+        "CHANGES",
+        1
+      ],
+      [
+        "CHANGES.rst",
+        1
+      ]
+    ],
+    "underSrcVsInPredicted": 0,
+    "topFiles": [
+      {
+        "path": "src/flask/app.py",
+        "fixCommits": 21,
+        "churn": 20,
+        "score": 0.5269,
+        "bugAssociated": true
+      },
+      {
+        "path": "flask/app.py",
+        "fixCommits": 0,
+        "churn": 354,
+        "score": 0.5,
+        "bugAssociated": false
+      },
+      {
+        "path": "CHANGES",
+        "fixCommits": 0,
+        "churn": 317,
+        "score": 0.4476,
+        "bugAssociated": false
+      },
+      {
+        "path": "tests/test_basic.py",
+        "fixCommits": 10,
+        "churn": 88,
+        "score": 0.4099,
+        "bugAssociated": true
+      },
+      {
+        "path": "CHANGES.rst",
+        "fixCommits": 36,
+        "churn": 90,
+        "score": 0.3785,
+        "bugAssociated": true
+      },
+      {
+        "path": "tests/test_helpers.py",
+        "fixCommits": 1,
+        "churn": 94,
+        "score": 0.3067,
+        "bugAssociated": true
+      },
+      {
+        "path": "flask/helpers.py",
+        "fixCommits": 0,
+        "churn": 204,
+        "score": 0.2875,
+        "bugAssociated": false
+      },
+      {
+        "path": "src/flask/helpers.py",
+        "fixCommits": 11,
+        "churn": 13,
+        "score": 0.24,
+        "bugAssociated": true
+      },
+      {
+        "path": "src/flask/cli.py",
+        "fixCommits": 6,
+        "churn": 16,
+        "score": 0.1882,
+        "bugAssociated": true
+      },
+      {
+        "path": "tests/flask_tests.py",
+        "fixCommits": 0,
+        "churn": 127,
+        "score": 0.1785,
+        "bugAssociated": false
+      }
+    ]
+  },
+  {
+    "name": "microsoft/vscode",
+    "commit": "578572bdc747af9238b50db3843ac8caeb27eb8d",
+    "window": {
+      "commits": 10000,
+      "bugFixCommits": 2000,
+      "bugFixShare": 0.2,
+      "commitsWithoutFiles": 1158,
+      "commitsWithoutFilesShare": 0.1158,
+      "firstWords": [
+        [
+          "sessions:",
+          1384
+        ],
+        [
+          "agentHost:",
+          1209
+        ],
+        [
+          "Merge",
+          741
+        ],
+        [
+          "chat:",
+          658
+        ],
+        [
+          "Fix",
+          584
+        ],
+        [
+          "Add",
+          320
+        ]
+      ],
+      "start": "2026-07-02",
+      "cutoff": "2026-10-08",
+      "end": "2026-11-05",
+      "trainCount": 7000,
+      "evaluationCount": 3000
+    },
+    "universe": {
+      "n": 8492,
+      "b": 943,
+      "truncated": false,
+      "predicted": 1699,
+      "truePositive": 561
+    },
+    "auc": 0.7957455616588799,
+    "bugFixChanges": {
+      "total": 1648,
+      "inPredicted": 1161,
+      "share": 0.7044902912621359
+    },
+    "testFiles": {
+      "shareInPredicted": 0.40200117716303707,
+      "shareInAll": 0.4022609514837494,
+      "bugShareAmongPredictedTests": 0.33382137628111275,
+      "bugShareAmongOtherPredicted": 0.327755905511811
+    },
+    "topExtensionsInPredicted": [
+      [
+        ".ts",
+        1631
+      ],
+      [
+        ".json",
+        30
+      ],
+      [
+        ".tsx",
+        15
+      ],
+      [
+        ".rs",
+        7
+      ],
+      [
+        ".js",
+        4
+      ]
+    ],
+    "topDirectoriesInPredicted": [
+      [
+        "src/vs",
+        1498
+      ],
+      [
+        "extensions/copilot",
+        116
+      ],
+      [
+        "test/smoke",
+        9
+      ],
+      [
+        "extensions/vscode-colorize-tests",
+        8
+      ],
+      [
+        "cli/src",
+        7
+      ]
+    ],
+    "underSrcVsInPredicted": 1498,
+    "topFiles": [
+      {
+        "path": "src/vs/platform/agentHost/test/node/agentService.test.ts",
+        "fixCommits": 11,
+        "churn": 273,
+        "score": 0.9488,
+        "bugAssociated": true
+      },
+      {
+        "path": "src/vs/platform/agentHost/test/node/copilotAgentSession.test.ts",
+        "fixCommits": 12,
+        "churn": 289,
+        "score": 0.8445,
+        "bugAssociated": true
+      },
+      {
+        "path": "src/vs/platform/agentHost/test/node/copilotAgent.test.ts",
+        "fixCommits": 14,
+        "churn": 286,
+        "score": 0.7958,
+        "bugAssociated": true
+      },
+      {
+        "path": "src/vs/platform/agentHost/node/agentService.ts",
+        "fixCommits": 11,
+        "churn": 304,
+        "score": 0.6841,
+        "bugAssociated": true
+      },
+      {
+        "path": "src/vs/platform/agentHost/node/copilot/copilotAgentSession.ts",
+        "fixCommits": 15,
+        "churn": 303,
+        "score": 0.6465,
+        "bugAssociated": true
+      },
+      {
+        "path": "src/vs/platform/agentHost/node/copilot/copilotAgent.ts",
+        "fixCommits": 16,
+        "churn": 301,
+        "score": 0.626,
+        "bugAssociated": true
+      },
+      {
+        "path": "src/vs/workbench/contrib/chat/test/browser/agentSessions/agentHostChatContribution.test.ts",
+        "fixCommits": 17,
+        "churn": 173,
+        "score": 0.599,
+        "bugAssociated": true
+      },
+      {
+        "path": "src/vs/sessions/contrib/providers/agentHost/test/browser/localAgentHostSessionsProvider.test.ts",
+        "fixCommits": 16,
+        "churn": 207,
+        "score": 0.5461,
+        "bugAssociated": true
+      },
+      {
+        "path": "src/vs/sessions/contrib/providers/agentHost/browser/baseAgentHostSessionsProvider.ts",
+        "fixCommits": 13,
+        "churn": 235,
+        "score": 0.5102,
+        "bugAssociated": true
+      },
+      {
+        "path": "src/vs/workbench/contrib/chat/browser/chat.shared.contribution.ts",
+        "fixCommits": 3,
+        "churn": 266,
+        "score": 0.5026,
+        "bugAssociated": true
+      }
+    ]
+  },
+  {
+    "name": "spring-projects/spring-boot",
+    "commit": "c1eb7d54a7149da16bc5d632d7464dba3b11b88e",
+    "window": {
+      "commits": 10000,
+      "bugFixCommits": 375,
+      "bugFixShare": 0.0375,
+      "commitsWithoutFiles": 3453,
+      "commitsWithoutFilesShare": 0.3453,
+      "firstWords": [
+        [
+          "Merge",
+          3440
+        ],
+        [
+          "Upgrade",
+          2405
+        ],
+        [
+          "Add",
+          690
+        ],
+        [
+          "Start",
+          657
+        ],
+        [
+          "Polish",
+          493
+        ],
+        [
+          "Fix",
+          268
+        ]
+      ],
+      "start": "2025-04-04",
+      "cutoff": "2026-04-18",
+      "end": "2026-11-04",
+      "trainCount": 7000,
+      "evaluationCount": 3000
+    },
+    "universe": {
+      "n": 10000,
+      "b": 135,
+      "truncated": true,
+      "predicted": 2000,
+      "truePositive": 103
+    },
+    "auc": 0.8654716449850763,
+    "bugFixChanges": {
+      "total": 182,
+      "inPredicted": 146,
+      "share": 0.8021978021978022
+    },
+    "testFiles": {
+      "shareInPredicted": 0.5345,
+      "shareInAll": 0.4494,
+      "bugShareAmongPredictedTests": 0.05144995322731525,
+      "bugShareAmongOtherPredicted": 0.05155746509129968
+    },
+    "topExtensionsInPredicted": [
+      [
+        ".java",
+        1915
+      ],
+      [
+        ".gradle",
+        36
+      ],
+      [
+        ".json",
+        26
+      ],
+      [
+        ".kt",
+        5
+      ],
+      [
+        ".p12",
+        4
+      ]
+    ],
+    "topDirectoriesInPredicted": [
+      [
+        "core/spring-boot",
+        390
+      ],
+      [
+        "core/spring-boot-autoconfigure",
+        85
+      ],
+      [
+        "module/spring-boot-actuator",
+        80
+      ],
+      [
+        "module/spring-boot-micrometer-metrics",
+        64
+      ],
+      [
+        "loader/spring-boot-loader",
+        56
+      ]
+    ],
+    "underSrcVsInPredicted": 0,
+    "topFiles": [
+      {
+        "path": "integration-test/spring-boot-actuator-integration-tests/src/test/resources/org/springframework/boot/actuate/sbom/syft.json",
+        "fixCommits": 0,
+        "churn": 1,
+        "score": 0.5,
+        "bugAssociated": false
+      },
+      {
+        "path": "spring-boot-project/spring-boot-dependencies/build.gradle",
+        "fixCommits": 1,
+        "churn": 1386,
+        "score": 0.5,
+        "bugAssociated": true
+      },
+      {
+        "path": "platform/spring-boot-dependencies/build.gradle",
+        "fixCommits": 7,
+        "churn": 586,
+        "score": 0.3471,
+        "bugAssociated": true
+      },
+      {
+        "path": "integration-test/spring-boot-actuator-integration-tests/src/test/resources/org/springframework/boot/actuate/sbom/cyclonedx.json",
+        "fixCommits": 0,
+        "churn": 1,
+        "score": 0.2585,
+        "bugAssociated": false
+      },
+      {
+        "path": "module/spring-boot-actuator-autoconfigure/src/test/resources/org/springframework/boot/actuate/autoconfigure/sbom/cyclonedx.json",
+        "fixCommits": 0,
+        "churn": 1,
+        "score": 0.2585,
+        "bugAssociated": false
+      },
+      {
+        "path": "integration-test/spring-boot-actuator-integration-tests/src/test/resources/org/springframework/boot/actuate/sbom/spdx.json",
+        "fixCommits": 0,
+        "churn": 1,
+        "score": 0.2545,
+        "bugAssociated": false
+      },
+      {
+        "path": "core/spring-boot/src/test/java/org/springframework/boot/context/properties/ConfigurationPropertiesTests.java",
+        "fixCommits": 1,
+        "churn": 2,
+        "score": 0.1612,
+        "bugAssociated": true
+      },
+      {
+        "path": "buildpack/spring-boot-buildpack-platform/src/test/resources/org/springframework/boot/buildpack/platform/docker/pull-stream.json",
+        "fixCommits": 0,
+        "churn": 1,
+        "score": 0.1454,
+        "bugAssociated": false
+      },
+      {
+        "path": "buildpack/spring-boot-buildpack-platform/src/test/resources/org/springframework/boot/buildpack/platform/json/stream.json",
+        "fixCommits": 0,
+        "churn": 1,
+        "score": 0.1454,
+        "bugAssociated": false
+      },
+      {
+        "path": "core/spring-boot/src/test/java/org/springframework/boot/SpringApplicationTests.java",
+        "fixCommits": 3,
+        "churn": 7,
+        "score": 0.1354,
+        "bugAssociated": true
+      }
+    ]
+  },
+  {
+    "name": "etcd-io/etcd",
+    "commit": "092167b24e534f52c5d51db6635701aea8f41954",
+    "window": {
+      "commits": 10000,
+      "bugFixCommits": 1584,
+      "bugFixShare": 0.1584,
+      "commitsWithoutFiles": 4019,
+      "commitsWithoutFilesShare": 0.4019,
+      "firstWords": [
+        [
+          "Merge",
+          4019
+        ],
+        [
+          "dependency:",
+          505
+        ],
+        [
+          "build(deps):",
+          349
+        ],
+        [
+          "tests:",
+          270
+        ],
+        [
+          "Update",
+          260
+        ],
+        [
+          "Add",
+          247
+        ]
+      ],
+      "start": "2019-07-31",
+      "cutoff": "2025-01-18",
+      "end": "2026-11-05",
+      "trainCount": 7000,
+      "evaluationCount": 3000
+    },
+    "universe": {
+      "n": 2549,
+      "b": 315,
+      "truncated": false,
+      "predicted": 510,
+      "truePositive": 216
+    },
+    "auc": 0.882403973227608,
+    "bugFixChanges": {
+      "total": 532,
+      "inPredicted": 402,
+      "share": 0.7556390977443609
+    },
+    "testFiles": {
+      "shareInPredicted": 0.5058823529411764,
+      "shareInAll": 0.44291879168301296,
+      "bugShareAmongPredictedTests": 0.5038759689922481,
+      "bugShareAmongOtherPredicted": 0.3412698412698413
+    },
+    "topExtensionsInPredicted": [
+      [
+        ".go",
+        439
+      ],
+      [
+        ".mod",
+        15
+      ],
+      [
+        ".sum",
+        15
+      ],
+      [
+        "(none)",
+        9
+      ],
+      [
+        ".sh",
+        8
+      ]
+    ],
+    "topDirectoriesInPredicted": [
+      [
+        "server/etcdserver",
+        73
+      ],
+      [
+        "tests/integration",
+        56
+      ],
+      [
+        "tests/e2e",
+        47
+      ],
+      [
+        "server/storage",
+        38
+      ],
+      [
+        "tests/robustness",
+        32
+      ]
+    ],
+    "underSrcVsInPredicted": 0,
+    "topFiles": [
+      {
+        "path": "api/etcdserverpb/rpc.pb.go",
+        "fixCommits": 2,
+        "churn": 17,
+        "score": 0.5229,
+        "bugAssociated": true
+      },
+      {
+        "path": "go.sum",
+        "fixCommits": 3,
+        "churn": 350,
+        "score": 0.5187,
+        "bugAssociated": true
+      },
+      {
+        "path": "tests/go.mod",
+        "fixCommits": 5,
+        "churn": 348,
+        "score": 0.5004,
+        "bugAssociated": true
+      },
+      {
+        "path": "go.mod",
+        "fixCommits": 2,
+        "churn": 345,
+        "score": 0.4962,
+        "bugAssociated": true
+      },
+      {
+        "path": "tests/go.sum",
+        "fixCommits": 3,
+        "churn": 326,
+        "score": 0.4846,
+        "bugAssociated": true
+      },
+      {
+        "path": "server/go.mod",
+        "fixCommits": 2,
+        "churn": 313,
+        "score": 0.4497,
+        "bugAssociated": true
+      },
+      {
+        "path": "server/go.sum",
+        "fixCommits": 2,
+        "churn": 294,
+        "score": 0.4369,
+        "bugAssociated": true
+      },
+      {
+        "path": "tools/mod/go.sum",
+        "fixCommits": 2,
+        "churn": 258,
+        "score": 0.4189,
+        "bugAssociated": true
+      },
+      {
+        "path": "tools/mod/go.mod",
+        "fixCommits": 2,
+        "churn": 277,
+        "score": 0.4042,
+        "bugAssociated": true
+      },
+      {
+        "path": "etcdutl/go.mod",
+        "fixCommits": 3,
+        "churn": 267,
+        "score": 0.3841,
+        "bugAssociated": true
+      }
+    ]
+  }
+]
