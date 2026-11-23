@@ -256,7 +256,7 @@ async function readTreeFileSizes(git: ReturnType<typeof simpleGit>, commit: stri
     if (!record) continue
     const tab = record.indexOf('\t')
     if (tab < 0) continue
-    const [mode, type, _object, sizeText] = record.slice(0, tab).split(' ')
+    const [mode, type, _object, sizeText] = record.slice(0, tab).trim().split(/\s+/)
     if (type !== 'blob' || mode === '120000' || sizeText === '-') continue
     const path = record.slice(tab + 1)
     if (!isExperimentPathIncluded(path)) continue
