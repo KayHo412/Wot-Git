@@ -20,7 +20,7 @@ export interface GitHistoryResult {
   cochangeTruncated: boolean
 }
 
-function parseNameOnlyHistory(raw: string, maxCommits: number, maxFiles: number): {
+function parseNameOnlyHistory(raw: string, maxCommits: number, maxFiles: number, includePath: (path: string) => boolean): {
   commits: ChangedCommit[]
   churnByPath: Map<string, { churnCount: number; lastTouched: string }>
   historyTruncated: boolean
@@ -54,7 +54,7 @@ function parseNameOnlyHistory(raw: string, maxCommits: number, maxFiles: number)
       awaitingDate = false
       continue
     }
-    if (isExcludedFile(token)) continue
+    if (isExcludedFile(token) || !includePath(token)) continue
     if (current.files.length < COCHANGE_MAX_FILES_PER_COMMIT) current.files.push(token)
     else cochangeTruncated = true
     const existing = churnByPath.get(token)
@@ -65,11 +65,17 @@ function parseNameOnlyHistory(raw: string, maxCommits: number, maxFiles: number)
   return { commits: records, churnByPath, historyTruncated, filesTruncated, cochangeTruncated }
 }
 
-export async function readGitHistory(repoPath: string, maxCommits = ANALYSIS_MAX_COMMITS, signal?: AbortSignal, maxFiles = ANALYSIS_MAX_FILES): Promise<GitHistoryResult> {
+export async function readGitHistory(
+  repoPath: string,
+  maxCommits = ANALYSIS_MAX_COMMITS,
+  signal?: AbortSignal,
+  maxFiles = ANALYSIS_MAX_FILES,
+  includePath: (path: string) => boolean = () => true,
+): Promise<GitHistoryResult> {
   if (!Number.isSafeInteger(maxFiles) || maxFiles < 1) throw new RangeError('maxFiles must be a positive safe integer')
   const git = scanGit(repoPath, signal)
   const raw = await git.raw(['log', '-z', `-${maxCommits + 1}`, '--format=%x1e%H%x00%ad', '--date=short', '--name-only'])
-  const parsed = parseNameOnlyHistory(raw, maxCommits, maxFiles)
+  const parsed = parseNameOnlyHistory(raw, maxCommits, maxFiles, includePath)
   const orderedFiles = [...parsed.churnByPath.entries()].sort((a, b) =>
     b[1].churnCount - a[1].churnCount || a[0].localeCompare(b[0])
   )

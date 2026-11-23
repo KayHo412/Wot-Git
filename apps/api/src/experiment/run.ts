@@ -1,15 +1,16 @@
 import { createHash } from 'node:crypto'
 import { execFile as execFileCallback } from 'node:child_process'
-import { mkdir, readFile, rm, stat, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { promisify } from 'node:util'
 import { homedir } from 'node:os'
 import { dirname, isAbsolute, join, resolve } from 'node:path'
-import type { CommitRecord, FileChurn, Hotspot } from '@wot-git/types'
+import type { CommitRecord, Hotspot } from '@wot-git/types'
 import { simpleGit } from 'simple-git'
 import { runHotspot } from '../services/hotspot'
 import { readGitHistory } from '../services/gitHistory'
 import { parseCommitReaderOutput, runCommitReader } from '../services/commitReader'
 import { BUG_FIX_PATTERN, LEGACY_BUG_FIX_PATTERN } from '../utils/bugFix'
+import { isExcludedFile } from '../utils/fileFilter'
 import { ANALYSIS_MAX_FILES } from '../config/limits'
 
 const execFile = promisify(execFileCallback)
@@ -30,7 +31,7 @@ export interface ExperimentConfig {
   maxFiles?: number
 }
 
-export type ScoreVariant = 'mean' | 'churn' | 'size' | 'product'
+export type ScoreVariant = 'mean' | 'churn' | 'size' | 'product' | 'pastFixCount'
 export type PatternName = 'default' | 'legacy'
 
 export interface RankingMetrics {
@@ -56,6 +57,7 @@ export interface ExperimentRow extends RankingMetrics {
   reason?: string
   filesTruncated: boolean
   commitsAtFileCap: number
+  trainingCommitsAtFileCap: number
 }
 
 interface FileScoreRow {
@@ -66,6 +68,7 @@ interface FileScoreRow {
   sizeScore: number
   mean: number
   product: number
+  pastFixCount: number
   inB: boolean
 }
 
@@ -84,6 +87,7 @@ interface RepositoryResult {
   filesTruncated?: boolean
   fileLimit: number
   commitsAtFileCap?: number
+  trainingCommitsAtFileCap?: number
   rows?: ExperimentRow[]
   error?: string
 }
@@ -101,7 +105,7 @@ interface RepoOutput {
   topFiles?: FileScoreRow[]
 }
 
-const SCORE_VARIANTS: ScoreVariant[] = ['mean', 'churn', 'size', 'product']
+const SCORE_VARIANTS: ScoreVariant[] = ['mean', 'churn', 'size', 'product', 'pastFixCount']
 const PATTERNS: Record<PatternName, RegExp> = {
   default: BUG_FIX_PATTERN,
   legacy: LEGACY_BUG_FIX_PATTERN,
@@ -155,12 +159,11 @@ export function calculateRankingMetrics(
   }
 }
 
-export function selectBugFiles(
+export function countBugFixCommitsByFile(
   commits: Array<Pick<CommitRecord, 'message' | 'files'>>,
   universe: Set<string>,
   pattern: RegExp,
-  minFixCommits: number,
-): { files: Set<string>; matchedCommitCount: number } {
+): { counts: Map<string, number>; matchedCommitCount: number } {
   const counts = new Map<string, number>()
   let matchedCommitCount = 0
   for (const commit of commits) {
@@ -172,10 +175,30 @@ export function selectBugFiles(
       if (universe.has(path)) counts.set(path, (counts.get(path) ?? 0) + 1)
     }
   }
-  return {
-    files: new Set([...counts].filter(([, count]) => count >= minFixCommits).map(([path]) => path)),
-    matchedCommitCount,
-  }
+  return { counts, matchedCommitCount }
+}
+
+export function selectBugFiles(
+  commits: Array<Pick<CommitRecord, 'message' | 'files'>>,
+  universe: Set<string>,
+  pattern: RegExp,
+  minFixCommits: number,
+): { files: Set<string>; matchedCommitCount: number } {
+  const { counts, matchedCommitCount } = countBugFixCommitsByFile(commits, universe, pattern)
+  return { files: new Set([...counts].filter(([, count]) => count >= minFixCommits).map(([path]) => path)), matchedCommitCount }
+}
+
+/** Additional exclusions are deliberately local to this experiment, not the dashboard filter. */
+export function isExperimentPathIncluded(path: string): boolean {
+  if (isExcludedFile(path)) return false
+  const normalized = path.replace(/\\/g, '/').replace(/^\.\//, '')
+  const filename = normalized.slice(normalized.lastIndexOf('/') + 1).toLowerCase()
+  const lowerPath = normalized.toLowerCase()
+  if (filename === 'gradlew' || filename === 'gradlew.bat' || filename === 'gradle.properties' || filename === 'gradle.lockfile') return false
+  if (/(?:^|\/)\.gradle\//.test(lowerPath) || /(?:^|\/)gradle\/wrapper\//.test(lowerPath)) return false
+  if (filename.endsWith('.gradle') || filename.endsWith('.gradle.kts')) return false
+  if (filename === 'go.mod' || filename === 'go.sum' || filename.endsWith('.snap') || filename.endsWith('.pb.go')) return false
+  return true
 }
 
 function quoteCsv(value: string | number | boolean): string {
@@ -226,26 +249,31 @@ async function ensureFullClone(repo: ExperimentRepository, cacheRoot: string): P
   return target
 }
 
-async function readWorkingTreeSizes(repoPath: string, files: FileChurn[]): Promise<Map<string, number>> {
+async function readTreeFileSizes(git: ReturnType<typeof simpleGit>, commit: string): Promise<Map<string, number>> {
+  const raw = await git.raw(['ls-tree', '-r', '-l', '-z', commit])
   const sizes = new Map<string, number>()
-  for (let offset = 0; offset < files.length; offset += 64) {
-    const batch = files.slice(offset, offset + 64)
-    const values = await Promise.all(batch.map(async file => {
-      try { return [file.path, (await stat(join(repoPath, file.path))).size] as const }
-      catch { return [file.path, 0] as const }
-    }))
-    for (const [path, size] of values) sizes.set(path, size)
+  for (const record of raw.split('\0')) {
+    if (!record) continue
+    const tab = record.indexOf('\t')
+    if (tab < 0) continue
+    const [mode, type, _object, sizeText] = record.slice(0, tab).split(' ')
+    if (type !== 'blob' || mode === '120000' || sizeText === '-') continue
+    const path = record.slice(tab + 1)
+    if (!isExperimentPathIncluded(path)) continue
+    const size = Number(sizeText)
+    if (Number.isSafeInteger(size) && size >= 0) sizes.set(path, size)
   }
   return sizes
 }
 
-function scoreMap(items: Hotspot[], variant: ScoreVariant): Map<string, number> {
+function scoreMap(items: Hotspot[], variant: ScoreVariant, pastFixCounts: Map<string, number> = new Map()): Map<string, number> {
+  if (variant === 'pastFixCount') return pastFixCounts
   return new Map(items.map(item => [item.path, variant === 'mean' ? item.hotspotScore : variant === 'churn' ? item.churnScore : variant === 'size' ? item.sizeScore : item.churnScore * item.sizeScore]))
 }
 
 function rowsToCsv(rows: ExperimentRow[]): string {
-  const headers = ['repo', 'pattern', 'minFixCommits', 'variant', 'N', 'B', 'r', 'P', 'TP', 'precision', 'recall', 'F1', 'baselineF1', 'lift', 'matchedCommitShare', 'filesTruncated', 'commitsAtFileCap', 'skipped', 'reason']
-  return toCsv(headers, rows.map(row => [row.repo, row.pattern, row.minFixCommits, row.variant, row.n, row.b, row.prevalence, row.predicted, row.truePositive, row.precision, row.recall, row.f1, row.baselineF1, row.lift, row.matchedCommitShare, row.filesTruncated, row.commitsAtFileCap, row.skipped, row.reason ?? '']))
+  const headers = ['repo', 'pattern', 'minFixCommits', 'variant', 'N', 'B', 'r', 'P', 'TP', 'precision', 'recall', 'F1', 'baselineF1', 'lift', 'matchedCommitShare', 'filesTruncated', 'trainingCommitsAtFileCap', 'commitsAtFileCap', 'skipped', 'reason']
+  return toCsv(headers, rows.map(row => [row.repo, row.pattern, row.minFixCommits, row.variant, row.n, row.b, row.prevalence, row.predicted, row.truePositive, row.precision, row.recall, row.f1, row.baselineF1, row.lift, row.matchedCommitShare, row.filesTruncated, row.trainingCommitsAtFileCap, row.commitsAtFileCap, row.skipped, row.reason ?? '']))
 }
 
 async function runRepository(
@@ -275,14 +303,18 @@ async function runRepository(
     if (trainCount < 1 || evaluationCommits.length < 1) throw new Error('The configured split produced an empty training or evaluation window')
 
     await git.raw(['checkout', '--detach', cutoffCommit])
-    const history = await readGitHistory(repoPath, trainCount, undefined, result.fileLimit)
+    const cutoffTreeSizes = await readTreeFileSizes(git, cutoffCommit)
+    const history = await readGitHistory(repoPath, trainCount, undefined, result.fileLimit, path => cutoffTreeSizes.has(path) && isExperimentPathIncluded(path))
     const hotspot = await runHotspot(repoPath, history.churn, undefined, result.fileLimit)
     const universe = history.churn.map(file => file.path)
     const universeSet = new Set(universe)
-    const sizeByPath = await readWorkingTreeSizes(repoPath, history.churn)
-    const hotByPath = new Map(hotspot.items.map(item => [item.path, item]))
+    const sizeByPath = cutoffTreeSizes
     result.filesInUniverse = universe.length
     result.filesTruncated = history.filesTruncated || hotspot.filesTruncated
+
+    const training = await runCommitReader(repoPath, trainCount)
+    const trainingCommitsAtFileCap = training.commitLog.filter(commit => commit.filesTruncated).length
+    result.trainingCommitsAtFileCap = trainingCommitsAtFileCap
 
     await git.raw(['checkout', '--detach', repo.commit])
     const evaluated = await runCommitReader(repoPath, evaluationCommits.length)
@@ -300,17 +332,18 @@ async function runRepository(
 
     for (const patternName of ['default', 'legacy'] as const) {
       const pattern = PATTERNS[patternName]
+      const trainingFixCounts = countBugFixCommitsByFile(training.commitLog, universeSet, pattern)
       for (const minFixCommits of config.minFixCommits) {
         const truthResult = selectBugFiles(commitRecords, universeSet, pattern, minFixCommits)
         const share = commitRecords.length === 0 ? 0 : truthResult.matchedCommitCount / commitRecords.length
         for (const variant of SCORE_VARIANTS) {
-          const metrics = calculateRankingMetrics(universe, truthResult.files, scoreMap(hotspot.items, variant), config.topFraction, share)
+          const metrics = calculateRankingMetrics(universe, truthResult.files, scoreMap(hotspot.items, variant, trainingFixCounts.counts), config.topFraction, share)
           rows.push({
             repo: repo.name, pattern: patternName, minFixCommits, variant,
             ...metrics,
             skipped: truthResult.files.size === 0,
             ...(truthResult.files.size === 0 ? { reason: 'No evaluation files in the training universe met this fix-commit threshold' } : {}),
-            filesTruncated: Boolean(result.filesTruncated), commitsAtFileCap,
+            filesTruncated: Boolean(result.filesTruncated), commitsAtFileCap, trainingCommitsAtFileCap,
           })
           if (patternName === 'default' && minFixCommits === 1 && variant === 'mean') {
             const scoreByPath = new Map(hotspot.items.map(item => [item.path, item]))
@@ -325,6 +358,7 @@ async function runRepository(
                 size: sizeByPath.get(path) ?? 0,
                 churnScore: score.churnScore, sizeScore: score.sizeScore,
                 mean: score.hotspotScore, product: score.churnScore * score.sizeScore,
+                pastFixCount: trainingFixCounts.counts.get(path) ?? 0,
                 inB: truthResult.files.has(path),
               }
             }))
@@ -354,8 +388,8 @@ async function writeOutputs(config: ExperimentConfig, outputs: RepoOutput[], out
   await writeFile(join(outputDir, 'results.csv'), rowsToCsv(allRows))
   for (const output of outputs) {
     if (!output.topFiles) continue
-    const headers = ['path', 'churn', 'size', 'churnScore', 'sizeScore', 'mean', 'churnOnly', 'sizeOnly', 'product', 'inB']
-    const rows = output.topFiles.map(file => [file.path, file.churn, file.size, file.churnScore, file.sizeScore, file.mean, file.churnScore, file.sizeScore, file.product, file.inB])
+    const headers = ['path', 'churn', 'size', 'churnScore', 'sizeScore', 'mean', 'churnOnly', 'sizeOnly', 'product', 'pastFixCount', 'inB']
+    const rows = output.topFiles.map(file => [file.path, file.churn, file.size, file.churnScore, file.sizeScore, file.mean, file.churnScore, file.sizeScore, file.product, file.pastFixCount, file.inB])
     await writeFile(join(outputDir, `top20-${repoSlug(output.result.name)}.csv`), toCsv(headers, rows))
   }
   return document
